@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 ##
-## This script cycles through all sites that have a certificate directory in \
-## Certbot's folder, and fetches an OCSP response from the OCSP URL embedded \
-## in the certificate. This primes the OCSP cache of nginx, because the OCSP \
-## responses get saved in locations that are referenced in the nginx \
+## This script cycles through all sites that have a certificate directory in
+## Certbot's folder, and fetches an OCSP response from the OCSP URL embedded
+## in the certificate. This primes the OCSP cache of nginx, because the OCSP
+## responses get saved in locations that are referenced in the nginx
 ## configurations of the websites that use the certificates.
 ##
 ## USAGE: fetch-ocsp-responses.sh
