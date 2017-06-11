@@ -19,11 +19,11 @@ OCSP_HOST="ocsp.int-x3.letsencrypt.org"
 for WEBSITE in $(find /etc/letsencrypt/live/ -type d | grep -o -P \
 '(?<=/live/).+$')
 do
-  CERT_PATH="/etc/letsencrypt/live/${WEBSITE}" 1> /dev/null
+  CERT_DIRECTORY="/etc/letsencrypt/live/${WEBSITE}" 1> /dev/null
   openssl ocsp -no_nonce -respout \
   "/etc/nginx/ocsp-cache/${WEBSITE}-ocsp-response.der" -issuer \
-  "${CERT_PATH}/chain.pem" -cert "${CERT_PATH}/cert.pem" -verify_other \
-  "${CERT_PATH}/chain.pem" -url "http://${OCSP_HOST}/" -header "HOST" \
+  "${CERT_DIRECTORY}/chain.pem" -cert "${CERT_DIRECTORY}/cert.pem" -verify_other \
+  "${CERT_DIRECTORY}/chain.pem" -url "http://${OCSP_HOST}/" -header "HOST" \
   "${OCSP_HOST}" 1> /dev/null
 done
 
