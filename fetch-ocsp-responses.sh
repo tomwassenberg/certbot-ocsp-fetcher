@@ -14,12 +14,12 @@
 set -eEfuo pipefail
 IFS=$'\n\t'
 
-OCSP_HOST="ocsp.int-x3.letsencrypt.org"
-
 for WEBSITE in $(find /etc/letsencrypt/live/ -type d | grep -o -P \
 '(?<=/live/).+$')
 do
   CERT_DIRECTORY="/etc/letsencrypt/live/${WEBSITE}" 1> /dev/null
+  OCSP_HOST="$(openssl x509 -in "${CERT_DIRECTORY}/cert.pem" -text | grep \
+  "OCSP - URI:" | cut -d/ -f3)"
   openssl ocsp -no_nonce -respout \
   "/etc/nginx/ocsp-cache/${WEBSITE}-ocsp-response.der" -issuer \
   "${CERT_DIRECTORY}/chain.pem" -cert "${CERT_DIRECTORY}/cert.pem" -verify_other \
