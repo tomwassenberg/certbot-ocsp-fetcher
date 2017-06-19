@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 ##
 ## This script cycles through all sites that have a certificate directory in
 ## Certbot's folder, and fetches an OCSP response from the OCSP URL embedded in
