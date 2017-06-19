@@ -23,7 +23,7 @@ fetch_ocsp_response() {
     -issuer "${CERT_DIRECTORY}/chain.pem" \
     -cert "${CERT_DIRECTORY}/cert.pem" \
     -verify_other "${CERT_DIRECTORY}/chain.pem" \
-    -respout "/etc/nginx/ocsp-cache/${WEBSITE}-ocsp-response.der" 1> /dev/null
+    -respout "/etc/nginx/ocsp-cache/${WEBSITE}-ocsp-response.der"
 }
 
 for WEBSITE in $(find /etc/letsencrypt/live/ -type d | grep -o -P \
