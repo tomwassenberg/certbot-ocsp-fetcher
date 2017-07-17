@@ -38,4 +38,7 @@ do
   fetch_ocsp_response 1> /dev/null
 done
 
-echo "Fetching of OCSP responses successful!"
+/usr/sbin/service nginx reload
+
+echo -e "\nFetching of OCSP responses successful! Nginx is reloaded to cache \
+the new responses."
