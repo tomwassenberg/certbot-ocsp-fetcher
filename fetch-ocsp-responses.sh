@@ -29,13 +29,16 @@ fetch_ocsp_response() {
 for WEBSITE in $(find /etc/letsencrypt/live/ -type d | grep -o -P \
 '(?<=/live/).+$')
 do
-  CERT_DIRECTORY="/etc/letsencrypt/live/${WEBSITE}" 1> /dev/null
-  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-  "${CERT_DIRECTORY}/cert.pem")" 1> /dev/null
-  OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | sed -e 's|^https://||' -e \
-  's|^http://||')" 1> /dev/null
+  {
+    CERT_DIRECTORY="/etc/letsencrypt/live/${WEBSITE}"
+    OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
+    "${CERT_DIRECTORY}/cert.pem")"
+    OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | sed -e 's|^https://||' -e \
+    's|^http://||')"
 
-  fetch_ocsp_response 1> /dev/null
+    fetch_ocsp_response
+  } 1> /dev/null
+
 done
 
 /usr/sbin/service nginx reload
