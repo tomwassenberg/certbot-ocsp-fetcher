@@ -26,7 +26,7 @@ fetch_ocsp_response() {
     -respout "/etc/nginx/ocsp-cache/${WEBSITE}-ocsp-response.der"
 }
 
-for WEBSITE in $(find /etc/letsencrypt/live/ -type d | grep -o -P \
+for WEBSITE in $(find /etc/letsencrypt/live/ -type d | grep -oP \
 '(?<=/live/).+$')
 do
   {
