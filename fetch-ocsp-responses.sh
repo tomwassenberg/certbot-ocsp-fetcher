@@ -77,7 +77,7 @@ case "${1}" in
         's|^http://||')"
 
         fetch_ocsp_response
-      done      
+      done
     } 1> /dev/null
     ;;
   *)
@@ -85,7 +85,7 @@ case "${1}" in
     exit 1
 esac
 
-/usr/sbin/service nginx reload
+/usr/sbin/service nginx reload 1> /dev/null
 
 if [[ "${1}" == "--all" ]]; then
   echo "Fetching of OCSP responses successful! Nginx is reloaded to cache the new responses."
