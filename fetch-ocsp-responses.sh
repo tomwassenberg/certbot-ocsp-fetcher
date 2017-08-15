@@ -88,5 +88,5 @@ esac
 /usr/sbin/service nginx reload 1> /dev/null
 
 if [[ "${1}" == "--all" ]]; then
-  echo "Fetching of OCSP responses successful! Nginx is reloaded to cache the new responses."
+  echo "Fetching of OCSP responses successful! nginx is reloaded to cache the new responses."
 fi
