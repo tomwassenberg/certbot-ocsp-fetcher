@@ -29,9 +29,16 @@ print_to_stderr() {
 
 # Generates file used by ssl_stapling_file in nginx config of websites
 fetch_ocsp_response() {
+  # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
+  # explicitly prohibited by the BR, but they are by Mozilla's recommended
+  # practices.
+  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
+  "${CERT_SUBDIRECTORY}/cert.pem" | sed -e 's|^https|http|' )"
+  OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F/ '{print $3}')"
+
   openssl ocsp \
     -no_nonce \
-    -url "${OCSP_ENDPOINT}/" \
+    -url "${OCSP_ENDPOINT}" \
     -header "HOST" "${OCSP_HOST}" \
     -issuer "${CERT_SUBDIRECTORY}/chain.pem" \
     -cert "${CERT_SUBDIRECTORY}/cert.pem" \
@@ -55,10 +62,6 @@ case "${1}" in
 
       WEBSITE="$(echo "${RENEWED_DOMAINS}" | awk '{print $1}')"
       CERT_SUBDIRECTORY="${RENEWED_LINEAGE}"
-      OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-      "${CERT_SUBDIRECTORY}/cert.pem")"
-      OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | sed -e 's|^https://||' -e \
-      's|^http://||')"
 
       fetch_ocsp_response
     } 1> /dev/null
@@ -71,10 +74,6 @@ case "${1}" in
       '(?<=/live/).+$')
       do
         CERT_SUBDIRECTORY="${CERT_DIRECTORY}/${WEBSITE}"
-        OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-        "${CERT_SUBDIRECTORY}/cert.pem")"
-        OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | sed -e 's|^https://||' -e \
-        's|^http://||')"
 
         fetch_ocsp_response
       done
