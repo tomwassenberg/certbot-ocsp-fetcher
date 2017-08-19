@@ -47,6 +47,11 @@ fetch_ocsp_response() {
     2> /dev/null
 }
 
+if [[ "${EUID}" != "0" ]]; then
+  echo "This script can only be run with superuser privileges."
+  exit 1
+fi
+
 if [[ -z ${1+x} ]]; then
   print_to_stderr "${USAGE}"
   exit 1
