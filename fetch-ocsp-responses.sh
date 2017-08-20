@@ -32,6 +32,7 @@ fetch_ocsp_response() {
   "${CERT_SUBDIRECTORY}/cert.pem" | sed -e 's|^https|http|' )"
   OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F/ '{print $3}')"
 
+  # Request, verify and save the actual OCSP response
   openssl ocsp \
     -no_nonce \
     -url "${OCSP_ENDPOINT}" \
@@ -43,11 +44,14 @@ fetch_ocsp_response() {
     2> /dev/null
 }
 
+# Check for sudo/root access, because it needs to access certificates,
+# write to /etc/nginx and reload the nginx service.
 if [[ "${EUID}" != "0" ]]; then
   echo "This script can only be run with superuser privileges."
   exit 1
 fi
 
+# These two variables are set if this script is invoked by Certbot
 if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
   {
     FETCH_ALL="1"
@@ -70,8 +74,10 @@ else
   } 1> /dev/null
 fi
 
+# Reload nginx to cache the new OCSP responses in memory
 /usr/sbin/service nginx reload 1> /dev/null
 
+# Only output success message if not run as Certbot hook
 if [[ "${FETCH_ALL}" == "1" ]]; then
   echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache any new responses."
 fi
