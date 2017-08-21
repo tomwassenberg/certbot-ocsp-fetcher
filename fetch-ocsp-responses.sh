@@ -30,7 +30,7 @@ fetch_ocsp_response() {
   # practices.
   OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
   "${CERT_SUBDIRECTORY}/cert.pem" | sed -e 's|^https|http|' )"
-  OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F/ '{print $3}')"
+  OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
 
   # Request, verify and save the actual OCSP response
   openssl ocsp \
@@ -67,7 +67,8 @@ if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
   } 1> /dev/null
 else
   {
-    WEBSITE="$(echo "${RENEWED_DOMAINS}" | awk '{print $1}')"
+    FETCH_ALL="0"
+    WEBSITE="$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')"
     CERT_SUBDIRECTORY="${RENEWED_LINEAGE}"
 
     fetch_ocsp_response
