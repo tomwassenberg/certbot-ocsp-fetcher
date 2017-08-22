@@ -28,8 +28,8 @@ fetch_ocsp_response() {
   # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
   # explicitly prohibited by the BR, but they are by Mozilla's recommended
   # practices.
-  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-  "${CERT_SUBDIRECTORY}/cert.pem" | sed -e 's|^https|http|' )"
+  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${1}/cert.pem" | sed -e \
+  's|^https|http|')"
   OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
 
   # Request, verify and save the actual OCSP response
@@ -37,10 +37,10 @@ fetch_ocsp_response() {
     -no_nonce \
     -url "${OCSP_ENDPOINT}" \
     -header "HOST" "${OCSP_HOST}" \
-    -issuer "${CERT_SUBDIRECTORY}/chain.pem" \
-    -cert "${CERT_SUBDIRECTORY}/cert.pem" \
-    -verify_other "${CERT_SUBDIRECTORY}/chain.pem" \
-    -respout "/etc/nginx/ocsp-cache/${WEBSITE}-ocsp-response.der" \
+    -issuer "${1}/chain.pem" \
+    -cert "${1}/cert.pem" \
+    -verify_other "${1}/chain.pem" \
+    -respout "/etc/nginx/ocsp-cache/${2}-ocsp-response.der" \
     2> /dev/null
 }
 
@@ -54,24 +54,25 @@ fi
 # These two variables are set if this script is invoked by Certbot
 if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
   {
+    # Run in "check every certificate" mode
     FETCH_ALL="1"
     CERT_DIRECTORY="/etc/letsencrypt/live"
 
-    for WEBSITE in $(find ${CERT_DIRECTORY} -type d | grep -oP \
+    for CERT_NAME in $(find ${CERT_DIRECTORY} -type d | grep -oP \
     '(?<=/live/).+$')
     do
-      CERT_SUBDIRECTORY="${CERT_DIRECTORY}/${WEBSITE}"
-
-      fetch_ocsp_response
+      fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" "${CERT_NAME}"
     done
+    unset CERT_NAME
   } 1> /dev/null
 else
   {
+    # Run in Certbot mode, only checking the passed certificate
     FETCH_ALL="0"
-    WEBSITE="$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')"
-    CERT_SUBDIRECTORY="${RENEWED_LINEAGE}"
 
-    fetch_ocsp_response
+    fetch_ocsp_response "${RENEWED_LINEAGE}" "$(echo "${RENEWED_LINEAGE}" | awk\
+    -F '/' '{print $NF}')"
+
   } 1> /dev/null
 fi
 
