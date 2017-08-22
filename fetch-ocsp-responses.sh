@@ -23,6 +23,28 @@
 set -eEfuo pipefail
 IFS=$'\n\t'
 
+process_website_list() {
+  # These two variables are set if this script is invoked by Certbot
+  if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
+      # Run in "check every certificate" mode
+      FETCH_ALL="1"
+      CERT_DIRECTORY="/etc/letsencrypt/live"
+
+      for CERT_NAME in $(find ${CERT_DIRECTORY} -type d | grep -oP \
+      '(?<=/live/).+$')
+      do
+        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" "${CERT_NAME}"
+      done
+      unset CERT_NAME
+  else
+      # Run in Certbot mode, only checking the passed certificate
+      FETCH_ALL="0"
+
+      fetch_ocsp_response "${RENEWED_LINEAGE}" "$(echo "${RENEWED_LINEAGE}" | \
+      awk -F '/' '{print $NF}')"
+  fi 1> /dev/null
+}
+
 # Generates file used by ssl_stapling_file in nginx config of websites
 fetch_ocsp_response() {
   # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
@@ -44,28 +66,6 @@ fetch_ocsp_response() {
     -verify_other "${1}/chain.pem" \
     -respout "/etc/nginx/ocsp-cache/${2}-ocsp-response.der" \
     2> /dev/null
-}
-
-process_website_list() {
-  # These two variables are set if this script is invoked by Certbot
-  if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
-      # Run in "check every certificate" mode
-      FETCH_ALL="1"
-      CERT_DIRECTORY="/etc/letsencrypt/live"
-
-      for CERT_NAME in $(find ${CERT_DIRECTORY} -type d | grep -oP \
-      '(?<=/live/).+$')
-      do
-        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" "${CERT_NAME}"
-      done
-      unset CERT_NAME
-  else
-      # Run in Certbot mode, only checking the passed certificate
-      FETCH_ALL="0"
-
-      fetch_ocsp_response "${RENEWED_LINEAGE}" "$(echo "${RENEWED_LINEAGE}" | \
-      awk -F '/' '{print $NF}')"
-  fi 1> /dev/null
 }
 
 # Check for sudo/root access, because it needs to access certificates,
