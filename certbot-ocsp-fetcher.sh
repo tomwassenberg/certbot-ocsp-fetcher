@@ -5,6 +5,8 @@ set -eEfuo pipefail
 IFS=$'\n\t'
 
 process_website_list() {
+  local OCSP_CACHE_DIR="/etc/nginx/ocsp-cache"
+
   # These two variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
       # Run in "check every certificate" mode
@@ -14,15 +16,16 @@ process_website_list() {
       for CERT_NAME in $(find ${CERT_DIRECTORY} -type d | grep -oP \
       '(?<=/live/).+$')
       do
-        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" "${CERT_NAME}"
+        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" \
+        "${OCSP_CACHE_DIR}" "${CERT_NAME}"
       done
       unset CERT_NAME
   else
       # Run in Certbot mode, only checking the passed certificate
       FETCH_ALL="0"
 
-      fetch_ocsp_response "${RENEWED_LINEAGE}" "$(echo "${RENEWED_LINEAGE}" | \
-      awk -F '/' '{print $NF}')"
+      fetch_ocsp_response "${RENEWED_LINEAGE}" "${OCSP_CACHE_DIR}" \
+      "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')"
   fi 1> /dev/null
 }
 
@@ -45,7 +48,7 @@ fetch_ocsp_response() {
     -issuer "${1}/chain.pem" \
     -cert "${1}/cert.pem" \
     -verify_other "${1}/chain.pem" \
-    -respout "/etc/nginx/ocsp-cache/${2}-ocsp-response.der" \
+    -respout "${2}/${3}.der" \
     2> /dev/null
 }
 
