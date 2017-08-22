@@ -1,24 +1,5 @@
 #!/usr/bin/env bash
 
-##
-## This script fetches OCSP responses, to be used by nginx, utilizing the OCSP
-## URL embedded in a certificate. This primes the OCSP cache of nginx, because
-## the OCSP responses get saved in locations that can be referenced in the nginx
-## configurations of the websites that use the certificates. The script can
-## behave in two ways.
-##
-## When this script is called by Certbot as a deploy hook, this is recognized by
-## checking if the variables are set that Certbot passes to its deploy hooks. In
-## this case only the OCSP response for the specific website whose certificate
-## is (re)issued by Certbot, is fetched.
-##
-## When Certbot's variables are not passed, the script cycles through all sites
-## that have a certificate directory in Certbot's folder, and fetches an OCSP
-## response.
-##
-## USAGE: fetch-ocsp-responses.sh
-##
-
 # Unofficial Bash strict mode
 set -eEfuo pipefail
 IFS=$'\n\t'
