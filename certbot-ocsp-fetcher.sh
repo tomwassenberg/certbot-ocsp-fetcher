@@ -14,6 +14,10 @@ parse_cli_arguments() {
           OUTPUT_DIR="${2}"
           shift
           ;;
+        -c|--certbot-dir)
+          CERTBOT_DIR="${2}"
+          shift
+          ;;
         *)
           echo "USAGE: ${0} [-o/--output-dir DIRECTORY]"
           exit 1
@@ -33,18 +37,28 @@ process_website_list() {
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
       # Run in "check every certificate" mode
       FETCH_ALL="1"
-      CERT_DIRECTORY="/etc/letsencrypt/live"
 
-      for CERT_NAME in $(find ${CERT_DIRECTORY} -type d | grep -oP \
+      if [[ -z ${CERTBOT_DIR+x} ]]; then
+        CERTBOT_DIR="/etc/letsencrypt"
+      fi
+
+      for CERT_NAME in $(find ${CERTBOT_DIR}/live -type d | grep -oP \
       '(?<=/live/).+$')
       do
-        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" "${OUTPUT_DIR}" \
+        fetch_ocsp_response "${CERTBOT_DIR}/live/${CERT_NAME}" "${OUTPUT_DIR}" \
         "${CERT_NAME}"
       done
       unset CERT_NAME
   else
       # Run in Certbot mode, only checking the passed certificate
       FETCH_ALL="0"
+
+      if [[ -n ${CERTBOT_DIR+x} ]]; then
+        echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
+        "used as a Certbot hook, because the directory is already inferred"\
+        "from the call that Certbot makes."
+        exit 1
+      fi
 
       fetch_ocsp_response "${RENEWED_LINEAGE}" "${OUTPUT_DIR}" \
       "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')"
@@ -91,5 +105,6 @@ process_website_list
 
 # Only output success message if not run as Certbot hook
 if [[ "${FETCH_ALL}" == "1" ]]; then
-  echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache any new responses."
+  echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache"\
+  "any new responses."
 fi
