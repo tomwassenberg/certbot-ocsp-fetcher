@@ -1,0 +1,8 @@
+[Unit]
+Description=Fetch OCSP responses for all certificates issued with Certbot
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/certbot-ocsp-fetcher.sh

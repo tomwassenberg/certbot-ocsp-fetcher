@@ -29,8 +29,9 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 The script should be run with superuser privileges, because it needs access to
 the directory Certbot stores its certificates in (by default
 `/etc/letsencrypt/live`).
-You should run it periodically, for instance by adding it to the root user's
-crontab. It can be run as follows:
+You should run it periodically, for instance by using the included systemd
+service + timer, or by adding it to the root user's crontab. It can be run as
+follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-o/--output-dir
 DIRECTORY]`

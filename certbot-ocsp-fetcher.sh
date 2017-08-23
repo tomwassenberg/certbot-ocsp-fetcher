@@ -68,8 +68,8 @@ process_website_list() {
 # Generates file used by ssl_stapling_file in nginx config of websites
 fetch_ocsp_response() {
   # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
-  # explicitly prohibited by the BR, but they are by Mozilla's recommended
-  # practices.
+  # explicitly prohibited by the Baseline Requirements, but they *are* by
+  # Mozilla's recommended practices.
   local OCSP_ENDPOINT
   OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${1}/cert.pem" | sed -e \
   's|^https|http|')"
