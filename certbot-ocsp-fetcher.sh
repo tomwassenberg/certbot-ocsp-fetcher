@@ -4,9 +4,30 @@
 set -eEfuo pipefail
 IFS=$'\n\t'
 
+parse_cli_arguments() {
+  while [[ ${#} -gt 1 ]]
+    do
+      local PARAMETER="${1}"
+
+      case ${PARAMETER} in
+        -o|--output-dir)
+          OUTPUT_DIR="${2}"
+          shift
+          ;;
+        *)
+          echo "USAGE: ${0} [-o/--output-dir DIRECTORY]"
+          exit 1
+          ;;
+      esac
+    shift
+  done
+}
+
 process_website_list() {
-  local OCSP_CACHE_DIR="/etc/nginx/ocsp-cache"
-  mkdir -p ${OCSP_CACHE_DIR}
+  if [[ -z ${OUTPUT_DIR+x} ]]; then
+    OUTPUT_DIR="/etc/nginx/ocsp-cache"
+  fi
+  mkdir -p ${OUTPUT_DIR}
 
   # These two variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
@@ -17,15 +38,15 @@ process_website_list() {
       for CERT_NAME in $(find ${CERT_DIRECTORY} -type d | grep -oP \
       '(?<=/live/).+$')
       do
-        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" \
-        "${OCSP_CACHE_DIR}" "${CERT_NAME}"
+        fetch_ocsp_response "${CERT_DIRECTORY}/${CERT_NAME}" "${OUTPUT_DIR}" \
+        "${CERT_NAME}"
       done
       unset CERT_NAME
   else
       # Run in Certbot mode, only checking the passed certificate
       FETCH_ALL="0"
 
-      fetch_ocsp_response "${RENEWED_LINEAGE}" "${OCSP_CACHE_DIR}" \
+      fetch_ocsp_response "${RENEWED_LINEAGE}" "${OUTPUT_DIR}" \
       "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')"
   fi 1> /dev/null
 }
@@ -53,12 +74,15 @@ fetch_ocsp_response() {
     2> /dev/null
 }
 
-# Check for sudo/root access, because it needs to access certificates,
-# write to /etc/nginx and reload the nginx service.
+# Check for sudo/root access, because it needs to access certificates, write to
+# the output directory which is probably not world-writeable and reload the
+# nginx service.
 if [[ "${EUID}" != "0" ]]; then
   echo "This script can only be run with superuser privileges."
   exit 1
 fi
+
+parse_cli_arguments "${@}"
 
 process_website_list
 
