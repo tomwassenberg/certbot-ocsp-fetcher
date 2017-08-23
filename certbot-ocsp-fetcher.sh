@@ -6,6 +6,7 @@ IFS=$'\n\t'
 
 process_website_list() {
   local OCSP_CACHE_DIR="/etc/nginx/ocsp-cache"
+  mkdir -p ${OCSP_CACHE_DIR}
 
   # These two variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
