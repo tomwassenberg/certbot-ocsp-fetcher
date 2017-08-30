@@ -88,23 +88,27 @@ fetch_ocsp_response() {
     2> /dev/null
 }
 
-# Check for sudo/root access, because it needs to access certificates, write to
-# the output directory which is probably not world-writeable and reload the
-# nginx service.
-if [[ "${EUID}" != "0" ]]; then
-  echo "This script can only be run with superuser privileges."
-  exit 1
-fi
+main() {
+  # Check for sudo/root access, because it needs to access certificates, write
+  # to the output directory which is probably not world-writeable and reload the
+  # nginx service.
+  if [[ "${EUID}" != "0" ]]; then
+    echo "This script can only be run with superuser privileges."
+    exit 1
+  fi
 
-parse_cli_arguments "${@}"
+  parse_cli_arguments "${@}"
 
-process_website_list
+  process_website_list
 
-# Reload nginx to cache the new OCSP responses in memory
-/usr/sbin/service nginx reload 1> /dev/null
+  # Reload nginx to cache the new OCSP responses in memory
+  /usr/sbin/service nginx reload 1> /dev/null
 
-# Only output success message if not run as Certbot hook
-if [[ "${FETCH_ALL}" == "1" ]]; then
-  echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache"\
-  "any new responses."
-fi
+  # Only output success message if not run as Certbot hook
+  if [[ "${FETCH_ALL}" == "1" ]]; then
+    echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache"\
+    "any new responses."
+  fi
+}
+
+main "${@}"
