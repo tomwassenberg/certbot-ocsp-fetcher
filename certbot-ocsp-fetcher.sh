@@ -7,15 +7,15 @@ IFS=$'\n\t'
 parse_cli_arguments() {
   while [[ ${#} -gt 1 ]]
     do
-      local PARAMETER="${1}"
+      local -r PARAMETER="${1}"
 
       case ${PARAMETER} in
         -o|--output-dir)
-          OUTPUT_DIR="${2}"
+          declare -gr OUTPUT_DIR="${2}"
           shift
           ;;
         -c|--certbot-dir)
-          CERTBOT_DIR="${2}"
+          declare -gr CERTBOT_DIR="${2}"
           shift
           ;;
         *)
@@ -29,17 +29,17 @@ parse_cli_arguments() {
 
 process_website_list() {
   if [[ -z ${OUTPUT_DIR+x} ]]; then
-    OUTPUT_DIR="/etc/nginx/ocsp-cache"
+    local -r OUTPUT_DIR="/etc/nginx/ocsp-cache"
   fi
   mkdir -p ${OUTPUT_DIR}
 
   # These two variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
       # Run in "check every certificate" mode
-      FETCH_ALL="1"
+      declare -gr FETCH_ALL="true"
 
       if [[ -z ${CERTBOT_DIR+x} ]]; then
-        CERTBOT_DIR="/etc/letsencrypt"
+        local -r CERTBOT_DIR="/etc/letsencrypt"
       fi
 
       for CERT_NAME in $(find ${CERTBOT_DIR}/live -type d | grep -oP \
@@ -51,7 +51,7 @@ process_website_list() {
       unset CERT_NAME
   else
       # Run in Certbot mode, only checking the passed certificate
-      FETCH_ALL="0"
+      declare -gr FETCH_ALL="false"
 
       if [[ -n ${CERTBOT_DIR+x} ]]; then
         echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
@@ -70,11 +70,9 @@ fetch_ocsp_response() {
   # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
   # explicitly prohibited by the Baseline Requirements, but they *are* by
   # Mozilla's recommended practices.
-  local OCSP_ENDPOINT
-  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${1}/cert.pem" | sed -e \
-  's|^https|http|')"
-  local OCSP_HOST
-  OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
+  local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${1}/cert.pem" |\
+  sed -e 's|^https|http|')"
+  local -r OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
 
   # Request, verify and save the actual OCSP response
   openssl ocsp \
@@ -105,7 +103,7 @@ main() {
   /usr/sbin/service nginx reload 1> /dev/null
 
   # Only output success message if not run as Certbot hook
-  if [[ "${FETCH_ALL}" == "1" ]]; then
+  if [[ "${FETCH_ALL}" == "true" ]]; then
     echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache"\
     "any new responses."
   fi
