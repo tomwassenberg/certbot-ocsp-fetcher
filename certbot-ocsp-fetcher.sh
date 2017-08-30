@@ -7,16 +7,14 @@ IFS=$'\n\t'
 parse_cli_arguments() {
   while [[ ${#} -gt 1 ]]
     do
-      local -r PARAMETER="${1}"
+      local -r PARAMETER="${1}"; shift
 
       case ${PARAMETER} in
         -o|--output-dir)
-          declare -gr OUTPUT_DIR="${2}"
-          shift
+          declare -gr OUTPUT_DIR="${1}"; shift
           ;;
         -c|--certbot-dir)
-          declare -gr CERTBOT_DIR="${2}"
-          shift
+          declare -gr CERTBOT_DIR="${1}"; shift
           ;;
         *)
           echo \
@@ -30,11 +28,11 @@ parse_cli_arguments() {
 
 process_website_list() {
   if [[ -z ${OUTPUT_DIR+x} ]]; then
-    local -r OUTPUT_DIR="/etc/nginx/ocsp-cache"
+    declare -gr OUTPUT_DIR="/etc/nginx/ocsp-cache"
   fi
   mkdir -p ${OUTPUT_DIR}
 
-  # These two variables are set if this script is invoked by Certbot
+  # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
       # Run in "check every certificate" mode
       declare -gr FETCH_ALL="true"
@@ -46,8 +44,7 @@ process_website_list() {
       for CERT_NAME in $(find ${CERTBOT_DIR}/live -type d | grep -oP \
       '(?<=/live/).+$')
       do
-        fetch_ocsp_response "${CERTBOT_DIR}/live/${CERT_NAME}" "${OUTPUT_DIR}" \
-        "${CERT_NAME}"
+        fetch_ocsp_response "${CERT_NAME}"
       done
       unset CERT_NAME
   else
@@ -57,22 +54,26 @@ process_website_list() {
       if [[ -n ${CERTBOT_DIR+x} ]]; then
         echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
         "used as a Certbot hook, because the directory is already inferred"\
-        "from the call that Certbot makes."
+        "from the call that Certbot makes." 1>&2
         exit 1
       fi
 
-      fetch_ocsp_response "${RENEWED_LINEAGE}" "${OUTPUT_DIR}" \
-      "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')"
+      fetch_ocsp_response "$(echo "${RENEWED_LINEAGE}" | awk -F '/' \
+      '{print $NF}')"
   fi 1> /dev/null
 }
 
 # Generates file used by ssl_stapling_file in nginx config of websites
+# $1 - Name of certificate lineage
 fetch_ocsp_response() {
   # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
   # explicitly prohibited by the Baseline Requirements, but they *are* by
   # Mozilla's recommended practices.
-  local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${1}/cert.pem" |\
-  sed -e 's|^https|http|')"
+  local -r CERT_NAME="${1}"; shift
+  local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
+
+  local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
+  "${CERT_DIR}/cert.pem" | sed -e 's|^https|http|')"
   local -r OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
 
   # Request, verify and save the actual OCSP response
@@ -80,10 +81,10 @@ fetch_ocsp_response() {
     -no_nonce \
     -url "${OCSP_ENDPOINT}" \
     -header "HOST" "${OCSP_HOST}" \
-    -issuer "${1}/chain.pem" \
-    -cert "${1}/cert.pem" \
-    -verify_other "${1}/chain.pem" \
-    -respout "${2}/${3}.der" \
+    -issuer "${CERT_DIR}/chain.pem" \
+    -cert "${CERT_DIR}/cert.pem" \
+    -verify_other "${CERT_DIR}/chain.pem" \
+    -respout "${OUTPUT_DIR}/${CERT_NAME}.der" \
     2> /dev/null
 }
 
