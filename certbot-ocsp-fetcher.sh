@@ -19,7 +19,8 @@ parse_cli_arguments() {
           shift
           ;;
         *)
-          echo "USAGE: ${0} [-o/--output-dir DIRECTORY]"
+          echo \
+          "USAGE: ${0} [-c/--certbot-dir DIRECTORY] [-o/--output-dir DIRECTORY]"
           exit 1
           ;;
       esac
