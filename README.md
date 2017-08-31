@@ -8,11 +8,11 @@ that use the certificates. The script can behave in two ways.
 
 When this script is called by Certbot as a deploy/renew hook, this is
 recognized by checking if the variables are set that Certbot passes to its
-deploy hooks. In this case only the OCSP response for the specific website whose
-certificate is (re)issued by Certbot, is fetched.
+deploy hooks. In this case only the OCSP response for the specific certificate
+that is (re)issued by Certbot, is fetched.
 
 When Certbot's variables are not passed, the script cycles through all sites
-that have a certificate directory in Certbot's folder, and fetches an OCSP
+that have a certificate lineage in Certbot's folder, and fetches an OCSP
 response.
 
 The use of this script makes sure OCSP stapling in nginx works reliably, which
@@ -42,9 +42,9 @@ command you would normally use when requesting a certificate, but add
 
 When you can't use Certbot >= 0.17.0, use the `--renew-hook` flag instead. The
 difference between `--deploy-hook` and `--renew-hook` is that a renew-hook is
-not invoked on the first issuance of a certificate, only on its renewals. Be
-aware that in Certbot < 0.10.0, hooks were [not saved] in the renewal
-configuration of a certificate.
+not invoked during the first issuance in a certificate lineage, but only during
+its renewals. Be aware that in Certbot < 0.10.0, hooks were [not saved] in the
+renewal configuration of a certificate.
 
 The output directory, where the OCSP responses are saved, defaults to
 `/etc/nginx/ocsp-cache`, if not specified with the `-o/--output-dir` parameter.
