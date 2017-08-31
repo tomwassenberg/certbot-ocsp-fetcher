@@ -38,7 +38,7 @@ process_website_list() {
       declare -gr FETCH_ALL="true"
 
       if [[ -z ${CERTBOT_DIR+x} ]]; then
-        local -r CERTBOT_DIR="/etc/letsencrypt"
+        declare -r CERTBOT_DIR="/etc/letsencrypt"
       fi
 
       for CERT_NAME in $(find ${CERTBOT_DIR}/live -type d | grep -oP \
@@ -70,7 +70,11 @@ fetch_ocsp_response() {
   # explicitly prohibited by the Baseline Requirements, but they *are* by
   # Mozilla's recommended practices.
   local -r CERT_NAME="${1}"; shift
-  local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
+  if [[ "${FETCH_ALL}" == "true" ]]; then
+    local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
+  else
+    CERT_DIR="${RENEWED_LINEAGE}"
+  fi
 
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
   "${CERT_DIR}/cert.pem" | sed -e 's|^https|http|')"
