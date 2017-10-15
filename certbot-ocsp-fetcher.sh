@@ -66,9 +66,6 @@ process_website_list() {
 # Generates file used by ssl_stapling_file in nginx config of websites
 # $1 - Name of certificate lineage
 fetch_ocsp_response() {
-  # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
-  # explicitly prohibited by the Baseline Requirements, but they *are* by
-  # Mozilla's recommended practices.
   local -r CERT_NAME="${1}"; shift
   if [[ "${FETCH_ALL}" == "true" ]]; then
     local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
@@ -76,6 +73,9 @@ fetch_ocsp_response() {
     CERT_DIR="${RENEWED_LINEAGE}"
   fi
 
+  # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
+  # explicitly prohibited by the Baseline Requirements, but they *are* by
+  # Mozilla's recommended practices.
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
   "${CERT_DIR}/cert.pem" | sed -e 's|^https|http|')"
   local -r OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
