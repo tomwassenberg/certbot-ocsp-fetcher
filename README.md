@@ -1,10 +1,15 @@
 # certbot-ocsp-fetcher
-`certbot-ocsp-fetcher` is a Bash script that fetches and verifies OCSP responses
-for TLS certificates issued with [Certbot], to be used by nginx. This primes the
-OCSP cache of nginx, which is needed because of nginx bug [#812]. This works by
-utilizing the OCSP URL embedded in a certificate, and saving the OCSP responses
-in locations that can be referenced in the nginx configurations of the websites
-that use the certificates. The script can behave in two ways.
+`certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. It's a Bash
+script that fetches and verifies OCSP responses for TLS certificates issued with
+[Certbot], to be used by nginx. This primes the OCSP cache of nginx, which is
+needed because of nginx bug [#812]. In order for all this to be useful, you
+should know how to correctly set up OCSP stapling in nginx, for which you can
+take a look at [Mozilla's SSL Configuration Generator] for instance.
+
+The script works by utilizing the OCSP URL embedded in a certificate, and saving
+the OCSP responses in locations that can be referenced in the nginx
+configurations of the websites that use the certificates. The script can behave
+in two ways.
 
 When this script is called by Certbot as a deploy/renew hook, this is
 recognized by checking if the variables are set that Certbot passes to its
@@ -56,12 +61,12 @@ parameter. Note that this doesn't apply when the script is used as a Certbot
 hook, since the path to Certbot and the certificate is inferred from the call
 that Certbot makes.
 
-In order for all this to be useful, you should know how to correctly set up
-OCSP stapling in nginx. Be sure to use the `ssl_stapling_file` directive in the
-OCSP directives in the nginx configuration of the website, so e.g.
-`ssl_stapling_file /etc/nginx/ocsp-cache/example.com.der;`.
+Be sure to use the `ssl_stapling_file` directive in the OCSP directives in the
+nginx configuration of the website, so e.g. `ssl_stapling_file
+/etc/nginx/ocsp-cache/example.com.der;`.
 
  [Certbot]: ../../../certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812
+ [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
  [not saved]: https://github.com/certbot/certbot/issues/3394
