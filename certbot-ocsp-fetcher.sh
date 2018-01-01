@@ -22,8 +22,7 @@ parse_cli_arguments() {
           exit 1
           ;;
       esac
-    shift
-  done
+    done
 }
 
 process_website_list() {
