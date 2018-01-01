@@ -18,7 +18,8 @@ parse_cli_arguments() {
           ;;
         *)
           echo \
-          "USAGE: ${0} [-c/--certbot-dir DIRECTORY] [-o/--output-dir DIRECTORY]"
+            "USAGE: ${0} [-c/--certbot-dir DIRECTORY] [-o/--output-dir"\
+            "DIRECTORY]"
           exit 1
           ;;
       esac
@@ -41,7 +42,7 @@ process_website_list() {
       fi
 
       for CERT_NAME in $(find ${CERTBOT_DIR}/live -type d | grep -oP \
-      '(?<=/live/).+$')
+        '(?<=/live/).+$')
       do
         fetch_ocsp_response "${CERT_NAME}"
       done
@@ -52,13 +53,13 @@ process_website_list() {
 
       if [[ -n ${CERTBOT_DIR+x} ]]; then
         echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
-        "used as a Certbot hook, because the directory is already inferred"\
-        "from the call that Certbot makes." 1>&2
+          "used as a Certbot hook, because the directory is already inferred"\
+          "from the call that Certbot makes." 1>&2
         exit 1
       fi
 
       fetch_ocsp_response "$(echo "${RENEWED_LINEAGE}" | awk -F '/' \
-      '{print $NF}')"
+        '{print $NF}')"
   fi 1> /dev/null
 }
 
@@ -76,7 +77,7 @@ fetch_ocsp_response() {
   # explicitly prohibited by the Baseline Requirements, but they *are* by
   # Mozilla's recommended practices.
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-  "${CERT_DIR}/cert.pem" | sed -e 's|^https|http|')"
+    "${CERT_DIR}/cert.pem" | sed -e 's|^https|http|')"
   local -r OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
 
   # Request, verify and save the actual OCSP response
@@ -110,7 +111,7 @@ main() {
   # Only output success message if not run as Certbot hook
   if [[ "${FETCH_ALL}" == "true" ]]; then
     echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache"\
-    "any new responses."
+      "any new responses."
   fi
 }
 
