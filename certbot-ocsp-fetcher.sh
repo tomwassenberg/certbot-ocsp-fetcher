@@ -29,7 +29,7 @@ process_website_list() {
   if [[ -z ${OUTPUT_DIR+x} ]]; then
     declare -gr OUTPUT_DIR="/etc/nginx/ocsp-cache"
   fi
-  mkdir -p ${OUTPUT_DIR}
+  mkdir -p -- ${OUTPUT_DIR}
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
