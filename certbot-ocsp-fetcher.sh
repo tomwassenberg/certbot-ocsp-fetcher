@@ -7,7 +7,7 @@ IFS=$'\n\t'
 parse_cli_arguments() {
   while [[ ${#} -gt 1 ]]
     do
-      local -r PARAMETER="${1}"; shift
+      local PARAMETER="${1}"; shift
 
       case ${PARAMETER} in
         -o|--output-dir)
