@@ -14,7 +14,7 @@ parse_cli_arguments() {
           declare -gr OUTPUT_DIR="${1}"; shift
           ;;
         -c|--certbot-dir)
-          declare -gr CERTBOT_DIR="${1}"; shift
+          declare -gr CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
           ;;
         *)
           echo \
@@ -41,8 +41,9 @@ process_website_list() {
         declare -r CERTBOT_DIR="/etc/letsencrypt"
       fi
 
-      for CERT_NAME in $(find ${CERTBOT_DIR}/live -type d | grep -oP \
-        '(?<=/live/).+$')
+      local -r LINEAGES=$(find "${CERTBOT_DIR}/live" -type d | \
+        grep -oP '(?<=/live/).+$')
+      for CERT_NAME in ${LINEAGES}
       do
         fetch_ocsp_response "${CERT_NAME}"
       done
