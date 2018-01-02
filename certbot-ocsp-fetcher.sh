@@ -14,7 +14,8 @@ parse_cli_arguments() {
           declare -gr OUTPUT_DIR="${1}"; shift
           ;;
         -c|--certbot-dir)
-          declare -gr CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
+          declare -gr CERTBOT_DIR
+          CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
           ;;
         *)
           echo \
@@ -71,7 +72,7 @@ fetch_ocsp_response() {
   if [[ "${FETCH_ALL}" == "true" ]]; then
     local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
   else
-    CERT_DIR="${RENEWED_LINEAGE}"
+    local -r CERT_DIR="${RENEWED_LINEAGE}"
   fi
 
   # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
