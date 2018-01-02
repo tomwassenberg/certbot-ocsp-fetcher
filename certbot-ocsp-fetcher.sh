@@ -20,7 +20,7 @@ parse_cli_arguments() {
         *)
           echo \
             "USAGE: ${0} [-c/--certbot-dir DIRECTORY] [-o/--output-dir"\
-            "DIRECTORY]"
+            "DIRECTORY]" 1>&2
           exit 1
           ;;
       esac
@@ -99,7 +99,7 @@ main() {
   # to the output directory which is probably not world-writeable and reload the
   # nginx service.
   if [[ "${EUID}" != "0" ]]; then
-    echo "This script can only be run with superuser privileges."
+    echo "This script can only be run with superuser privileges." 1>&2
     exit 1
   fi
 
