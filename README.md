@@ -65,7 +65,7 @@ Be sure to use the `ssl_stapling_file` directive in the OCSP directives in the
 nginx configuration of the website, so e.g. `ssl_stapling_file
 /etc/nginx/ocsp-cache/example.com.der;`.
 
- [Certbot]: ../../../certbot/certbot
+ [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
