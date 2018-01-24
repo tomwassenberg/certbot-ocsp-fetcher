@@ -91,7 +91,7 @@ fetch_ocsp_response() {
     -cert "${CERT_DIR}/cert.pem" \
     -verify_other "${CERT_DIR}/chain.pem" \
     -respout "${OUTPUT_DIR}/${CERT_NAME}.der" \
-    2> /dev/null
+    2>/dev/null | grep -q "^${CERT_DIR}/cert.pem: good$"
 }
 
 main() {
