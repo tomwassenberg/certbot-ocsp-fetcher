@@ -74,11 +74,8 @@ fetch_ocsp_response() {
     local -r CERT_DIR="${RENEWED_LINEAGE}"
   fi
 
-  # Enforce that the OCSP URL is always plain HTTP, because HTTPS URL's are not
-  # explicitly prohibited by the Baseline Requirements, but they *are* by
-  # Mozilla's recommended practices.
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-    "${CERT_DIR}/cert.pem" | sed -e 's|^https|http|')"
+    "${CERT_DIR}/cert.pem")"
   local -r OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
 
   # Request, verify and save the actual OCSP response
