@@ -35,9 +35,6 @@ process_website_list() {
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
-      # Run in "check every certificate" mode
-      readonly FETCH_ALL="true"
-
       if [[ -z ${CERTBOT_DIR+x} ]]; then
         readonly CERTBOT_DIR="/etc/letsencrypt"
       fi
@@ -45,13 +42,17 @@ process_website_list() {
       local -r LINEAGES=$(ls "${CERTBOT_DIR}/live")
       for CERT_NAME in ${LINEAGES}
       do
-        fetch_ocsp_response "${CERT_NAME}"
+        # Run in "check every certificate" mode
+        fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
       done
       unset CERT_NAME
-  else
-      # Run in Certbot mode, only checking the passed certificate
-      readonly FETCH_ALL="false"
 
+      # Reload nginx to cache the new OCSP responses in memory
+      /usr/sbin/service nginx reload
+
+      echo "Fetching of OCSP response(s) successful! nginx is reloaded to"\
+        "cache any new responses."
+  else
       if [[ -n ${CERTBOT_DIR+x} ]]; then
         echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
           "used as a Certbot hook, because the directory is already inferred"\
@@ -59,20 +60,25 @@ process_website_list() {
         exit 1
       fi
 
-      fetch_ocsp_response "$(echo "${RENEWED_LINEAGE}" | awk -F '/' \
-        '{print $NF}')"
-  fi 1> /dev/null
+      # Run in Certbot mode, only checking the passed certificate
+      fetch_ocsp_response "--deploy_hook" \
+        "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
+
+      # Reload nginx to cache the new OCSP responses in memory
+      /usr/sbin/service nginx reload
+  fi
 }
 
 # Generates file used by ssl_stapling_file in nginx config of websites
-# $1 - Name of certificate lineage
+# $1 - Whether to run as a deploy hook for Certbot, or standalone
+# $2 - Name of certificate lineage
 fetch_ocsp_response() {
-  local -r CERT_NAME="${1}"; shift
-  if [[ "${FETCH_ALL}" == "true" ]]; then
+  if [[ "${1}" == "--standalone" ]]; then
     local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
-  else
+  elif [[ "${1}" == "--deploy_hook" ]]; then
     local -r CERT_DIR="${RENEWED_LINEAGE}"
   fi
+  local -r CERT_NAME="${2}"; shift; shift
 
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
     "${CERT_DIR}/cert.pem")"
@@ -102,15 +108,6 @@ main() {
   parse_cli_arguments "${@}"
 
   process_website_list
-
-  # Reload nginx to cache the new OCSP responses in memory
-  /usr/sbin/service nginx reload 1> /dev/null
-
-  # Only output success message if not run as Certbot hook
-  if [[ "${FETCH_ALL}" == "true" ]]; then
-    echo "Fetching of OCSP response(s) successful! nginx is reloaded to cache"\
-      "any new responses."
-  fi
 }
 
 main "${@}"
