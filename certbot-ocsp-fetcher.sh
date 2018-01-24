@@ -11,11 +11,11 @@ parse_cli_arguments() {
 
       case ${PARAMETER} in
         -o|--output-dir)
-          declare -gr OUTPUT_DIR="${1}"; shift
+          readonly OUTPUT_DIR="${1}"; shift
           ;;
         -c|--certbot-dir)
-          declare -gr CERTBOT_DIR
           CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
+          readonly CERTBOT_DIR
           ;;
         *)
           echo \
@@ -29,17 +29,17 @@ parse_cli_arguments() {
 
 process_website_list() {
   if [[ -z ${OUTPUT_DIR+x} ]]; then
-    declare -gr OUTPUT_DIR="/etc/nginx/ocsp-cache"
+    readonly OUTPUT_DIR="/etc/nginx/ocsp-cache"
   fi
   mkdir -p -- ${OUTPUT_DIR}
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
       # Run in "check every certificate" mode
-      declare -gr FETCH_ALL="true"
+      readonly FETCH_ALL="true"
 
       if [[ -z ${CERTBOT_DIR+x} ]]; then
-        declare -r CERTBOT_DIR="/etc/letsencrypt"
+        readonly CERTBOT_DIR="/etc/letsencrypt"
       fi
 
       local -r LINEAGES=$(find "${CERTBOT_DIR}/live" -type d | \
@@ -51,7 +51,7 @@ process_website_list() {
       unset CERT_NAME
   else
       # Run in Certbot mode, only checking the passed certificate
-      declare -gr FETCH_ALL="false"
+      readonly FETCH_ALL="false"
 
       if [[ -n ${CERTBOT_DIR+x} ]]; then
         echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
