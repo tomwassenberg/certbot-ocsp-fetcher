@@ -42,8 +42,7 @@ process_website_list() {
         readonly CERTBOT_DIR="/etc/letsencrypt"
       fi
 
-      local -r LINEAGES=$(find "${CERTBOT_DIR}/live" -type d | \
-        grep -oP '(?<=/live/).+$')
+      local -r LINEAGES=$(ls "${CERTBOT_DIR}/live")
       for CERT_NAME in ${LINEAGES}
       do
         fetch_ocsp_response "${CERT_NAME}"
