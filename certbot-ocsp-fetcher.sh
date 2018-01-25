@@ -88,7 +88,7 @@ fetch_ocsp_response() {
   openssl ocsp \
     -no_nonce \
     -url "${OCSP_ENDPOINT}" \
-    -header "HOST" "${OCSP_HOST}" \
+    -header "Host" "${OCSP_HOST}" \
     -issuer "${CERT_DIR}/chain.pem" \
     -cert "${CERT_DIR}/cert.pem" \
     -verify_other "${CERT_DIR}/chain.pem" \
