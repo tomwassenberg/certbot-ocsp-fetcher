@@ -35,37 +35,37 @@ process_website_list() {
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
-      if [[ -z ${CERTBOT_DIR+x} ]]; then
-        readonly CERTBOT_DIR="/etc/letsencrypt"
-      fi
+    if [[ -z ${CERTBOT_DIR+x} ]]; then
+      readonly CERTBOT_DIR="/etc/letsencrypt"
+    fi
 
-      local -r LINEAGES=$(ls "${CERTBOT_DIR}/live")
-      for CERT_NAME in ${LINEAGES}
-      do
-        # Run in "check every certificate" mode
-        fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
-      done
-      unset CERT_NAME
+    local -r LINEAGES=$(ls "${CERTBOT_DIR}/live")
+    for CERT_NAME in ${LINEAGES}
+    do
+      # Run in "check every certificate" mode
+      fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
+    done
+    unset CERT_NAME
 
-      # Reload nginx to cache the new OCSP responses in memory
-      /usr/sbin/service nginx reload
+    # Reload nginx to cache the new OCSP responses in memory
+    /usr/sbin/service nginx reload
 
-      echo "Fetching of OCSP response(s) successful! nginx is reloaded to"\
-        "cache any new responses."
+    echo "Fetching of OCSP response(s) successful!"\
+      "nginx is reloaded to cache any new responses."
   else
-      if [[ -n ${CERTBOT_DIR+x} ]]; then
-        echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
-          "used as a Certbot hook, because the directory is already inferred"\
-          "from the call that Certbot makes." 1>&2
-        exit 1
-      fi
+    if [[ -n ${CERTBOT_DIR+x} ]]; then
+      echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
+        "used as a Certbot hook, because the directory is already inferred"\
+        "from the call that Certbot makes." 1>&2
+      exit 1
+    fi
 
-      # Run in Certbot mode, only checking the passed certificate
-      fetch_ocsp_response "--deploy_hook" \
-        "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
+    # Run in Certbot mode, only checking the passed certificate
+    fetch_ocsp_response "--deploy_hook" \
+      "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
 
-      # Reload nginx to cache the new OCSP responses in memory
-      /usr/sbin/service nginx reload
+    # Reload nginx to cache the new OCSP responses in memory
+    /usr/sbin/service nginx reload
   fi
 }
 
