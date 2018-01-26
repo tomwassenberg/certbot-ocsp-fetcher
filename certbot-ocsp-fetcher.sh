@@ -46,40 +46,46 @@ process_website_list() {
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
-    # Run in "check every certificate" mode
-
-    if [[ -z ${CERTBOT_DIR+x} ]]; then
-      readonly CERTBOT_DIR="/etc/letsencrypt"
-    fi
-
-    if [[ -r "${CERTBOT_DIR}/live" ]]; then
-      declare LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
-      for CERT_NAME in ${LINEAGES}
-      do
-        fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
-      done
-      unset CERT_NAME
-    else
-      echo "ERROR: You don't have read access to the certificate folder!" 1>&2
-      exit 1
-    fi
-
-    reload_nginx_and_print_result
+    run_standalone
   else
-    # Run in Certbot mode, only checking the passed certificate
-
-    if [[ -n ${CERTBOT_DIR+x} ]]; then
-      echo "ERROR: The -c/--certbot-dir parameter is not applicable when"\
-        "Certbot is used as a Certbot hook, because the directory is already"\
-        "inferred from the call that Certbot makes." 1>&2
-      exit 1
-    fi
-
-    fetch_ocsp_response "--deploy_hook" \
-      "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
-
-    reload_nginx_and_print_result
+    run_as_deploy_hook
   fi
+}
+
+# Run in "check every certificate" mode
+run_standalone() {
+  if [[ -z ${CERTBOT_DIR+x} ]]; then
+    readonly CERTBOT_DIR="/etc/letsencrypt"
+  fi
+
+  if [[ -r "${CERTBOT_DIR}/live" ]]; then
+    declare LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
+    for CERT_NAME in ${LINEAGES}
+    do
+      fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
+    done
+    unset CERT_NAME
+  else
+    echo "ERROR: You don't have read access to the certificate folder!" 1>&2
+    exit 1
+  fi
+
+  reload_nginx_and_print_result
+}
+
+# Run in Certbot mode, only checking the passed certificate
+run_as_deploy_hook() {
+  if [[ -n ${CERTBOT_DIR+x} ]]; then
+    echo "ERROR: The -c/--certbot-dir parameter is not applicable when"\
+      "Certbot is used as a Certbot hook, because the directory is already"\
+      "inferred from the call that Certbot makes." 1>&2
+    exit 1
+  fi
+
+  fetch_ocsp_response "--deploy_hook" \
+    "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
+
+  reload_nginx_and_print_result
 }
 
 # Generates file used by ssl_stapling_file in nginx config of websites
