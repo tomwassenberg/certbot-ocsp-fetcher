@@ -11,7 +11,8 @@ parse_cli_arguments() {
 
       case ${PARAMETER} in
         -o|--output-dir)
-          readonly OUTPUT_DIR="${1}"; shift
+          OUTPUT_DIR="$(readlink -fn -- "${1}")"; shift
+          readonly OUTPUT_DIR
           ;;
         -c|--certbot-dir)
           CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
@@ -31,41 +32,53 @@ process_website_list() {
   if [[ -z ${OUTPUT_DIR+x} ]]; then
     readonly OUTPUT_DIR="/etc/nginx/ocsp-cache"
   fi
-  mkdir -p -- ${OUTPUT_DIR}
+  if [[ -e ${OUTPUT_DIR} ]]; then
+    if [[ ! -w ${OUTPUT_DIR} ]]; then
+      echo "ERROR: You don't have write access"\
+        "to the output directory (\"${OUTPUT_DIR}\")."\
+        "Specify another folder using the -o/--output-dir flag or change"\
+        "the permissions of the current output folder accordingly." 1>&2
+      exit 1
+    fi
+  else
+    mkdir -p -- ${OUTPUT_DIR}
+  fi
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
+    # Run in "check every certificate" mode
+
     if [[ -z ${CERTBOT_DIR+x} ]]; then
       readonly CERTBOT_DIR="/etc/letsencrypt"
     fi
 
-    local -r LINEAGES=$(ls "${CERTBOT_DIR}/live")
-    for CERT_NAME in ${LINEAGES}
-    do
-      # Run in "check every certificate" mode
-      fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
-    done
-    unset CERT_NAME
-
-    # Reload nginx to cache the new OCSP responses in memory
-    /usr/sbin/service nginx reload
-
-    echo "Fetching of OCSP response(s) successful!"\
-      "nginx is reloaded to cache any new responses."
-  else
-    if [[ -n ${CERTBOT_DIR+x} ]]; then
-      echo "The -c/--certbot-dir parameter is not applicable when Certbot is"\
-        "used as a Certbot hook, because the directory is already inferred"\
-        "from the call that Certbot makes." 1>&2
+    if [[ -r "${CERTBOT_DIR}/live" ]]; then
+      declare LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
+      for CERT_NAME in ${LINEAGES}
+      do
+        fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
+      done
+      unset CERT_NAME
+    else
+      echo "ERROR: You don't have read access to the certificate folder!" 1>&2
       exit 1
     fi
 
+    reload_nginx_and_print_result
+  else
     # Run in Certbot mode, only checking the passed certificate
+
+    if [[ -n ${CERTBOT_DIR+x} ]]; then
+      echo "ERROR: The -c/--certbot-dir parameter is not applicable when"\
+        "Certbot is used as a Certbot hook, because the directory is already"\
+        "inferred from the call that Certbot makes." 1>&2
+      exit 1
+    fi
+
     fetch_ocsp_response "--deploy_hook" \
       "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
 
-    # Reload nginx to cache the new OCSP responses in memory
-    /usr/sbin/service nginx reload
+    reload_nginx_and_print_result
   fi
 }
 
@@ -96,15 +109,20 @@ fetch_ocsp_response() {
     2>/dev/null | grep -q "^${CERT_DIR}/cert.pem: good$"
 }
 
-main() {
-  # Check for sudo/root access, because it needs to access certificates, write
-  # to the output directory which is probably not world-writeable and reload the
-  # nginx service.
-  if [[ "${EUID}" != "0" ]]; then
-    echo "This script can only be run with superuser privileges." 1>&2
-    exit 1
+reload_nginx_and_print_result() {
+  # Reload nginx to cache the new OCSP responses in memory
+  if pgrep -fu "${EUID}" 'nginx: master process' > /dev/null; then
+    /usr/sbin/service nginx reload
+    echo "Fetching of OCSP response(s) successful!"\
+      "nginx is reloaded to cache any new responses."
+  else
+    echo "Fetching of OCSP responses successful!"\
+      "WARNING: Script is run without root privileges, so nginx has to be"\
+      "manually restarted to cache the new OCSP responses in memory."
   fi
+}
 
+main() {
   parse_cli_arguments "${@}"
 
   process_website_list
