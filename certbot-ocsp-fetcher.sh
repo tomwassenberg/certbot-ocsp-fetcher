@@ -82,8 +82,7 @@ run_as_deploy_hook() {
     exit 1
   fi
 
-  fetch_ocsp_response "--deploy_hook" \
-    "$(echo "${RENEWED_LINEAGE}" | awk -F '/' '{print $NF}')" 1>/dev/null
+  fetch_ocsp_response "--deploy_hook" "${RENEWED_LINEAGE##*/}" 1>/dev/null
 
   reload_nginx_and_print_result
 }
@@ -101,7 +100,7 @@ fetch_ocsp_response() {
 
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
     "${CERT_DIR}/cert.pem")"
-  local -r OCSP_HOST="$(echo "${OCSP_ENDPOINT}" | awk -F '/' '{print $3}')"
+  local -r OCSP_HOST="${OCSP_ENDPOINT#*://}"
 
   # Request, verify and save the actual OCSP response
   openssl ocsp \
