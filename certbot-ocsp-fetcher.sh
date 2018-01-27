@@ -30,7 +30,8 @@ parse_cli_arguments() {
     done
 }
 
-process_website_list() {
+# Set output directory if necessary and check if it's writeable
+prepare_output_dir() {
   if [[ -n ${OUTPUT_DIR+x} ]]; then
     if [[ ! -e ${OUTPUT_DIR} ]]; then
       # Try to create output directory, but don't yet fail if not possible
@@ -48,7 +49,10 @@ process_website_list() {
       "flag or create the folder manually with permissions"\
       "that allow it to be writeable for the current user."
   fi
+}
 
+# Determine operation mode
+process_certificates() {
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
     run_standalone
@@ -90,7 +94,7 @@ run_as_deploy_hook() {
   reload_nginx_and_print_result
 }
 
-# Generates file used by ssl_stapling_file in nginx config of websites
+# Generate file used by ssl_stapling_file in nginx config of websites
 # $1 - Whether to run as a deploy hook for Certbot, or standalone
 # $2 - Name of certificate lineage
 fetch_ocsp_response() {
@@ -133,7 +137,9 @@ reload_nginx_and_print_result() {
 main() {
   parse_cli_arguments "${@}"
 
-  process_website_list
+  prepare_output_dir
+
+  process_certificates
 }
 
 main "${@}"
