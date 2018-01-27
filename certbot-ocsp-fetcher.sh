@@ -9,6 +9,11 @@ exit_with_error() {
   exit 1
 }
 
+print_usage() {
+  exit_with_error \
+    "USAGE: ${0} [-c/--certbot-dir DIRECTORY]"\
+    "[-o/--output-dir DIRECTORY]"
+}
 parse_cli_arguments() {
   while [[ ${#} -gt 1 ]]
     do
@@ -22,12 +27,14 @@ parse_cli_arguments() {
           CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
           ;;
         *)
-          exit_with_error \
-            "USAGE: ${0} [-c/--certbot-dir DIRECTORY] [-o/--output-dir"\
-            "DIRECTORY]"
+          print_usage
           ;;
       esac
     done
+
+  if [[ ${#} == 1 ]]; then
+    print_usage
+  fi
 }
 
 # Set output directory if necessary and check if it's writeable
