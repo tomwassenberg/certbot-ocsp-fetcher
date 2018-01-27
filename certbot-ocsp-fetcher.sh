@@ -31,18 +31,22 @@ parse_cli_arguments() {
 }
 
 process_website_list() {
-  readonly OUTPUT_DIR="${OUTPUT_DIR:-/etc/nginx/ocsp-cache}"
-
-  if [[ -e ${OUTPUT_DIR} ]]; then
-    if [[ ! -w ${OUTPUT_DIR} ]]; then
-      exit_with_error \
-        "ERROR: You don't have write access to"\
-        "the output directory (\"${OUTPUT_DIR}\")."\
-        "Specify another folder using the -o/--output-dir flag or change"\
-        "the permissions of the current output folder accordingly."
+  if [[ -n ${OUTPUT_DIR+x} ]]; then
+    if [[ ! -e ${OUTPUT_DIR} ]]; then
+      # Try to create output directory, but don't yet fail if not possible
+      mkdir -p -- "${OUTPUT_DIR}" || true
     fi
   else
-    mkdir -p -- "${OUTPUT_DIR}"
+    readonly OUTPUT_DIR="/etc/nginx/ocsp-cache"
+  fi
+
+  if [[ ! -w ${OUTPUT_DIR} ]]; then
+    exit_with_error \
+      "ERROR: You don't have write access to"\
+      "the output directory (\"${OUTPUT_DIR}\")."\
+      "Specify another folder using the -o/--output-dir"\
+      "flag or create the folder manually with permissions"\
+      "that allow it to be writeable for the current user."
   fi
 
   # These two environment variables are set if this script is invoked by Certbot
@@ -66,7 +70,7 @@ run_standalone() {
     unset CERT_NAME
   else
     exit_with_error \
-      "ERROR: You don't have read access to the certificate folder!"
+      "ERROR: Certificate folder does not exist, or you don't have read access!"
   fi
 
   reload_nginx_and_print_result
