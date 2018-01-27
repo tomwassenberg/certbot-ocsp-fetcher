@@ -4,6 +4,11 @@
 set -eEfuo pipefail
 IFS=$'\n\t'
 
+exit_with_error() {
+  echo 1>&2 "${@}"
+  exit 1
+}
+
 parse_cli_arguments() {
   while [[ ${#} -gt 1 ]]
     do
@@ -17,10 +22,9 @@ parse_cli_arguments() {
           CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
           ;;
         *)
-          echo \
+          exit_with_error \
             "USAGE: ${0} [-c/--certbot-dir DIRECTORY] [-o/--output-dir"\
-            "DIRECTORY]" 1>&2
-          exit 1
+            "DIRECTORY]"
           ;;
       esac
     done
@@ -31,11 +35,11 @@ process_website_list() {
 
   if [[ -e ${OUTPUT_DIR} ]]; then
     if [[ ! -w ${OUTPUT_DIR} ]]; then
-      echo "ERROR: You don't have write access"\
-        "to the output directory (\"${OUTPUT_DIR}\")."\
+      exit_with_error \
+        "ERROR: You don't have write access to"\
+        "the output directory (\"${OUTPUT_DIR}\")."\
         "Specify another folder using the -o/--output-dir flag or change"\
-        "the permissions of the current output folder accordingly." 1>&2
-      exit 1
+        "the permissions of the current output folder accordingly."
     fi
   else
     mkdir -p -- "${OUTPUT_DIR}"
@@ -61,8 +65,8 @@ run_standalone() {
     done
     unset CERT_NAME
   else
-    echo "ERROR: You don't have read access to the certificate folder!" 1>&2
-    exit 1
+    exit_with_error \
+      "ERROR: You don't have read access to the certificate folder!"
   fi
 
   reload_nginx_and_print_result
@@ -71,10 +75,10 @@ run_standalone() {
 # Run in Certbot mode, only checking the passed certificate
 run_as_deploy_hook() {
   if [[ -n ${CERTBOT_DIR+x} ]]; then
-    echo "ERROR: The -c/--certbot-dir parameter is not applicable when"\
-      "Certbot is used as a Certbot hook, because the directory is already"\
-      "inferred from the call that Certbot makes." 1>&2
-    exit 1
+    exit_with_error \
+      "ERROR: The -c/--certbot-dir parameter is not applicable"\
+      "when Certbot is used as a Certbot hook, because the directory"
+      "is already inferred from the call that Certbot makes."
   fi
 
   fetch_ocsp_response "--deploy_hook" "${RENEWED_LINEAGE##*/}" 1>/dev/null
