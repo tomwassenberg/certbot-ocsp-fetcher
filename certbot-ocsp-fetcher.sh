@@ -12,11 +12,9 @@ parse_cli_arguments() {
       case ${PARAMETER} in
         -o|--output-dir)
           OUTPUT_DIR="$(readlink -fn -- "${1}")"; shift
-          readonly OUTPUT_DIR
           ;;
         -c|--certbot-dir)
           CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
-          readonly CERTBOT_DIR
           ;;
         *)
           echo \
@@ -29,9 +27,8 @@ parse_cli_arguments() {
 }
 
 process_website_list() {
-  if [[ -z ${OUTPUT_DIR+x} ]]; then
-    readonly OUTPUT_DIR="/etc/nginx/ocsp-cache"
-  fi
+  readonly OUTPUT_DIR="${OUTPUT_DIR:-/etc/nginx/ocsp-cache}"
+
   if [[ -e ${OUTPUT_DIR} ]]; then
     if [[ ! -w ${OUTPUT_DIR} ]]; then
       echo "ERROR: You don't have write access"\
@@ -41,7 +38,7 @@ process_website_list() {
       exit 1
     fi
   else
-    mkdir -p -- ${OUTPUT_DIR}
+    mkdir -p -- "${OUTPUT_DIR}"
   fi
 
   # These two environment variables are set if this script is invoked by Certbot
@@ -54,9 +51,7 @@ process_website_list() {
 
 # Run in "check every certificate" mode
 run_standalone() {
-  if [[ -z ${CERTBOT_DIR+x} ]]; then
-    readonly CERTBOT_DIR="/etc/letsencrypt"
-  fi
+  readonly CERTBOT_DIR="${CERTBOT_DIR:-/etc/letsencrypt}"
 
   if [[ -r "${CERTBOT_DIR}/live" ]]; then
     declare LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
