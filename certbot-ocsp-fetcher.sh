@@ -60,23 +60,30 @@ prepare_output_dir() {
 
 # Determine operation mode
 process_certificates() {
+  # Create temporary directory to store OCSP response,
+  # before having checked the certificate status therein
+  local -r TEMP_OUTPUT_DIR="$(mktemp -d)"
+
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
-    run_standalone
+    run_standalone "${TEMP_OUTPUT_DIR}"
   else
-    run_as_deploy_hook
+    run_as_deploy_hook "${TEMP_OUTPUT_DIR}"
   fi
 }
 
 # Run in "check every certificate" mode
+# $1 - Path to temporary output directory
 run_standalone() {
+  local -r TEMP_OUTPUT_DIR="${1}"
   readonly CERTBOT_DIR="${CERTBOT_DIR:-/etc/letsencrypt}"
 
   if [[ -r "${CERTBOT_DIR}/live" ]]; then
-    declare LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
+    local LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
     for CERT_NAME in ${LINEAGES}
     do
-      fetch_ocsp_response "--standalone" "${CERT_NAME}" 1>/dev/null
+      fetch_ocsp_response \
+        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>/dev/null
     done
     unset CERT_NAME
   else
@@ -88,7 +95,10 @@ run_standalone() {
 }
 
 # Run in Certbot mode, only checking the passed certificate
+# $1 - Path to temporary output directory
 run_as_deploy_hook() {
+  local -r TEMP_OUTPUT_DIR="${1}"
+
   if [[ -n ${CERTBOT_DIR+x} ]]; then
     exit_with_error \
       "ERROR: The -c/--certbot-dir parameter is not applicable"\
@@ -96,7 +106,8 @@ run_as_deploy_hook() {
       "is already inferred from the call that Certbot makes."
   fi
 
-  fetch_ocsp_response "--deploy_hook" "${RENEWED_LINEAGE##*/}" 1>/dev/null
+  fetch_ocsp_response \
+    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}" 1>/dev/null
 
   reload_nginx_and_print_result
 }
@@ -104,19 +115,26 @@ run_as_deploy_hook() {
 # Generate file used by ssl_stapling_file in nginx config of websites
 # $1 - Whether to run as a deploy hook for Certbot, or standalone
 # $2 - Name of certificate lineage
+# $3 - Path to temporary output directory
 fetch_ocsp_response() {
-  if [[ "${1}" == "--standalone" ]]; then
-    local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
-  elif [[ "${1}" == "--deploy_hook" ]]; then
-    local -r CERT_DIR="${RENEWED_LINEAGE}"
-  fi
-  local -r CERT_NAME="${2}"; shift; shift
+  case ${1} in
+    --standalone)
+      local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
+      ;;
+    --deploy_hook)
+      local -r CERT_DIR="${RENEWED_LINEAGE}"
+      ;;
+  esac
+  local -r CERT_NAME="${2}";
+  local -r TEMP_OUTPUT_DIR="${3}"
+  shift; shift; shift
 
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
     "${CERT_DIR}/cert.pem")"
   local -r OCSP_HOST="${OCSP_ENDPOINT#*://}"
 
-  # Request, verify and save the actual OCSP response
+  # Request, verify and temporarily save the actual OCSP response,
+  # and check whether the certificate status is "good"
   openssl ocsp \
     -no_nonce \
     -url "${OCSP_ENDPOINT}" \
@@ -124,18 +142,23 @@ fetch_ocsp_response() {
     -issuer "${CERT_DIR}/chain.pem" \
     -cert "${CERT_DIR}/cert.pem" \
     -verify_other "${CERT_DIR}/chain.pem" \
-    -respout "${OUTPUT_DIR}/${CERT_NAME}.der" \
+    -respout "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" \
     2>/dev/null | grep -q "^${CERT_DIR}/cert.pem: good$"
+
+  # If arrived here status was good, so move OCSP response to definitive folder
+  mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
 }
 
 reload_nginx_and_print_result() {
   # Reload nginx to cache the new OCSP responses in memory
   if pgrep -fu "${EUID}" 'nginx: master process' > /dev/null; then
     /usr/sbin/service nginx reload
-    echo "Fetching of OCSP response(s) successful!"\
+    echo \
+      "Fetching of OCSP response(s) successful!"\
       "nginx is reloaded to cache any new responses."
   else
-    echo "Fetching of OCSP responses successful!"\
+    echo \
+      "Fetching of OCSP responses successful!"\
       "WARNING: Script is run without root privileges, so nginx has to be"\
       "manually restarted to cache the new OCSP responses in memory."
   fi
