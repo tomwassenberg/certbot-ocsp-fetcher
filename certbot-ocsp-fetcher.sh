@@ -83,7 +83,7 @@ run_standalone() {
     for CERT_NAME in ${LINEAGES}
     do
       fetch_ocsp_response \
-        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>/dev/null
+        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>&-
     done
     unset CERT_NAME
   else
@@ -107,7 +107,7 @@ run_as_deploy_hook() {
   fi
 
   fetch_ocsp_response \
-    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}" 1>/dev/null
+    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}" 1>&-
 
   reload_nginx_and_print_result
 }
@@ -142,8 +142,8 @@ fetch_ocsp_response() {
     -issuer "${CERT_DIR}/chain.pem" \
     -cert "${CERT_DIR}/cert.pem" \
     -verify_other "${CERT_DIR}/chain.pem" \
-    -respout "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" \
-    2>/dev/null | grep -q "^${CERT_DIR}/cert.pem: good$"
+    -respout "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" 2>&- \
+    | grep -q "^${CERT_DIR}/cert.pem: good$"
 
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
@@ -151,7 +151,7 @@ fetch_ocsp_response() {
 
 reload_nginx_and_print_result() {
   # Reload nginx to cache the new OCSP responses in memory
-  if pgrep -fu "${EUID}" 'nginx: master process' > /dev/null; then
+  if pgrep -fu "${EUID}" 'nginx: master process' >&-; then
     /usr/sbin/service nginx reload
     echo \
       "Fetching of OCSP response(s) successful!"\
