@@ -32,6 +32,7 @@ parse_cli_arguments() {
       esac
     done
 
+   # All CLI parameters require a value, so a single argument is always invalid
   if [[ ${#} == 1 ]]; then
     print_usage
   fi
@@ -41,7 +42,8 @@ parse_cli_arguments() {
 prepare_output_dir() {
   if [[ -n ${OUTPUT_DIR+x} ]]; then
     if [[ ! -e ${OUTPUT_DIR} ]]; then
-      # Try to create output directory, but don't yet fail if not possible
+      # Don't yet fail if it's not possible to create the directory, so we can
+      # exit with a custom error down below
       mkdir -p -- "${OUTPUT_DIR}" || true
     fi
   else
@@ -58,8 +60,7 @@ prepare_output_dir() {
   fi
 }
 
-# Determine operation mode
-process_certificates() {
+start_in_correct_mode() {
   # Create temporary directory to store OCSP response,
   # before having checked the certificate status therein
   local -r TEMP_OUTPUT_DIR="$(mktemp -d)"
@@ -72,29 +73,29 @@ process_certificates() {
   fi
 }
 
-# Run in "check every certificate" mode
+# Run in "check every certificate lineage managed by Certbot" mode
 # $1 - Path to temporary output directory
 run_standalone() {
   local -r TEMP_OUTPUT_DIR="${1}"
   readonly CERTBOT_DIR="${CERTBOT_DIR:-/etc/letsencrypt}"
 
-  if [[ -r "${CERTBOT_DIR}/live" ]]; then
-    local LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
-    for CERT_NAME in ${LINEAGES}
-    do
-      fetch_ocsp_response \
-        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>&-
-    done
-    unset CERT_NAME
-  else
+  if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
     exit_with_error \
       "ERROR: Certificate folder does not exist, or you don't have read access!"
   fi
 
+  local LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
+  for CERT_NAME in ${LINEAGES}
+  do
+    fetch_ocsp_response \
+      "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>&-
+  done
+  unset CERT_NAME
+
   reload_nginx_and_print_result
 }
 
-# Run in Certbot mode, only checking the passed certificate
+# Run in deploy-hook mode, only checking the passed certificate
 # $1 - Path to temporary output directory
 run_as_deploy_hook() {
   local -r TEMP_OUTPUT_DIR="${1}"
@@ -127,7 +128,7 @@ fetch_ocsp_response() {
   esac
   local -r CERT_NAME="${2}";
   local -r TEMP_OUTPUT_DIR="${3}"
-  shift; shift; shift
+  shift 3
 
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
     "${CERT_DIR}/cert.pem")"
@@ -150,8 +151,7 @@ fetch_ocsp_response() {
 }
 
 reload_nginx_and_print_result() {
-  # Reload nginx to cache the new OCSP responses in memory
-  if pgrep -fu "${EUID}" 'nginx: master process' >&-; then
+  if pgrep -fu "${EUID}" 'nginx: master process' 1>&-; then
     /usr/sbin/service nginx reload
     echo \
       "Fetching of OCSP response(s) successful!"\
@@ -169,7 +169,7 @@ main() {
 
   prepare_output_dir
 
-  process_certificates
+  start_in_correct_mode
 }
 
 main "${@}"
