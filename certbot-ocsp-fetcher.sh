@@ -151,7 +151,7 @@ fetch_ocsp_response() {
 }
 
 reload_nginx_and_print_result() {
-  if pgrep -fu "${EUID}" 'nginx: master process' 1>&-; then
+  if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
     /usr/sbin/service nginx reload
     echo \
       "Fetching of OCSP response(s) successful!"\
