@@ -2,9 +2,12 @@
 `certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. It's a Bash
 script that fetches and verifies OCSP responses for TLS certificates issued with
 [Certbot], to be used by nginx. This primes the OCSP cache of nginx, which is
-needed because of nginx bug [#812]. In order for all this to be useful, you
-should know how to correctly set up OCSP stapling in nginx, for which you can
-take a look at [Mozilla's SSL Configuration Generator] for instance.
+needed because of nginx's flawed implementation (see bug [#812]). In order for
+all this to be useful, you should know how to correctly set up OCSP stapling in
+nginx, for which you can take a look at [Mozilla's SSL Configuration Generator]
+for instance. If you use Certbot's `nginx` plugin, you can also add the
+`--staple-ocsp` flag to your `certbot --nginx` command(s) to configure OCSP
+stapling.
 
 The script works by utilizing the OCSP URL embedded in a certificate, and saving
 the OCSP responses in locations that can be referenced in the nginx
