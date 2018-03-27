@@ -34,22 +34,21 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 
 ## Usage
 
-The script should be run with superuser privileges, because it needs access to
-the directory Certbot stores its certificates in (by default
-`/etc/letsencrypt/live`).
+The script should be run with privileges that allow it to access the directory
+that Certbot stores its certificates in (by default `/etc/letsencrypt/live`).
 You should run it periodically, for instance by using the included systemd
-service + timer, or by adding it to the root user's crontab. It can be run as
+service + timer, or by adding it to the user's crontab. It can be run as
 follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-o/--output-dir
 DIRECTORY]`
 
-When you want to use this as a deploy hook (Certbot >= 0.17.0), use the Certbot
-command you would normally use when requesting a certificate, but add
-`--deploy-hook "/path/to/certbot-ocsp-fetcher.sh"`.
+When you want to use this as a deploy hook (Certbot >= 0.17.0), append
+`--deploy-hook "/path/to/certbot-ocsp-fetcher.sh"` to the Certbot command you
+would normally use when requesting a certificate.
 
 When you can't use Certbot >= 0.17.0, use the `--renew-hook` flag instead. The
-difference between `--deploy-hook` and `--renew-hook` is that a renew-hook is
+difference between `--deploy-hook` and `--renew-hook` is that a renew hook is
 not invoked during the first issuance in a certificate lineage, but only during
 its renewals. Be aware that in Certbot < 0.10.0, hooks were [not saved] in the
 renewal configuration of a certificate.
@@ -59,7 +58,7 @@ The output directory, where the OCSP responses are saved, defaults to
 The filename of the OCSP response is the name of the certificate lineage (as
 used by Certbot) with the DER extension. The configuration directory of Certbot,
 that certbot-ocsp-fetcher uses to process the certificates, defaults to
-`/etc/letsencrypt`. This can be specified by using the `-c/--certbot-dir`
+`/etc/letsencrypt`. This can be changed by using the `-c/--certbot-dir`
 parameter. Note that this doesn't apply when the script is used as a Certbot
 hook, since the path to Certbot and the certificate is inferred from the call
 that Certbot makes.
