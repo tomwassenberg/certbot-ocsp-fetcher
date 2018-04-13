@@ -20,11 +20,14 @@ parse_cli_arguments() {
       local PARAMETER="${1}"; shift
 
       case ${PARAMETER} in
-        -o|--output-dir)
-          OUTPUT_DIR="$(readlink -fn -- "${1}")"; shift
-          ;;
         -c|--certbot-dir)
           CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
+          ;;
+        -n|--cert-name)
+          CERT_LINEAGE="${1}"; shift
+          ;;
+        -o|--output-dir)
+          OUTPUT_DIR="$(readlink -fn -- "${1}")"; shift
           ;;
         *)
           print_usage
@@ -73,7 +76,7 @@ start_in_correct_mode() {
   fi
 }
 
-# Run in "check every certificate lineage managed by Certbot" mode
+# Run in "check one or all certificate lineage(s) managed by Certbot" mode
 # $1 - Path to temporary output directory
 run_standalone() {
   local -r TEMP_OUTPUT_DIR="${1}"
@@ -84,13 +87,21 @@ run_standalone() {
       "ERROR: Certificate folder does not exist, or you don't have read access!"
   fi
 
-  local LINEAGES; LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
-  for CERT_NAME in ${LINEAGES}
-  do
+  # Check specific lineage if passed on CLI,
+  # or otherwise all lineages in Certbot's dir
+  if [[ -n "${CERT_LINEAGE+x}" ]]; then
     fetch_ocsp_response \
-      "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>&-
-  done
-  unset CERT_NAME
+      "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}" 1>&-
+  else
+    local LINEAGES
+    LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
+    for CERT_NAME in ${LINEAGES}
+    do
+      fetch_ocsp_response \
+        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>&-
+    done
+    unset CERT_NAME
+  fi
 
   reload_nginx_and_print_result
 }
@@ -118,6 +129,8 @@ run_as_deploy_hook() {
 # $2 - Name of certificate lineage
 # $3 - Path to temporary output directory
 fetch_ocsp_response() {
+  local -r CERT_NAME="${2}";
+  local -r TEMP_OUTPUT_DIR="${3}"
   case ${1} in
     --standalone)
       local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
@@ -126,8 +139,6 @@ fetch_ocsp_response() {
       local -r CERT_DIR="${RENEWED_LINEAGE}"
       ;;
   esac
-  local -r CERT_NAME="${2}";
-  local -r TEMP_OUTPUT_DIR="${3}"
   shift 3
 
   local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
