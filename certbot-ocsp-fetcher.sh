@@ -12,6 +12,7 @@ exit_with_error() {
 print_usage() {
   exit_with_error \
     "USAGE: ${0} [-c/--certbot-dir DIRECTORY]"\
+    "[-n/--cert-name CERTNAME]"\
     "[-o/--output-dir DIRECTORY]"
 }
 parse_cli_arguments() {
