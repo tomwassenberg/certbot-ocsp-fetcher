@@ -10,7 +10,7 @@ for instance. If you use Certbot's `nginx` plugin, you can also add the
 stapling.
 
 The script works by utilizing the OCSP URL embedded in a certificate, and saving
-the OCSP responses in locations that can be referenced in the nginx
+the OCSP responses in staples that can be referenced in the nginx
 configurations of the websites that use the certificates. The script can behave
 in two ways.
 
@@ -29,22 +29,21 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 ## Dependencies
 - bash
 - openssl (tested with 1.0.2g)
-- Certbot >= 0.5.0
+- Certbot >=0.5.0
 - nginx (tested with 1.10.3)
 
 ## Usage
 The script should be run with privileges that allow it to access the directory
 that Certbot stores its certificates in (by default `/etc/letsencrypt/live`).
-You should run it periodically, for instance by using the included systemd
-service + timer, or by adding it to the user's crontab. It can be run as
-follows:
+You should run it daily, for instance by using the included systemd service +
+timer, or by adding it to the user's crontab. It can be run as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY]
 [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY]`
 
-The filename of the OCSP response is the name of the certificate lineage (as used
-by Certbot) with the DER extension. Be sure to point nginx to the OCSP response(s)
-by using the `ssl_stapling_file` directive in the nginx configuration of the
+The filename of the OCSP staple is the name of the certificate lineage (as used
+by Certbot) with the DER extension. Be sure to point nginx to the staple(s) by
+using the `ssl_stapling_file` directive in the nginx configuration of the
 website, so e.g. `ssl_stapling_file /etc/nginx/ocsp-cache/example.com.der;`.
 
 When you want to use this tool as a deploy hook (available in Certbot >=0.17.0),
@@ -57,10 +56,15 @@ not invoked during the first issuance in a certificate lineage, but only during
 its renewals. Be aware that in Certbot <0.10.0, hooks were [not saved] in the
 renewal configuration of a certificate.
 
+**Note:** If there is an OCSP staple with the target name already existing in
+the output directory which doesn't expire within two days, a new OCSP response
+will **not** be fetched.
+
 ### CLI parameters
 - `-c, --certbot-dir`\
   Specify the configuration directory of the Certbot instance, that is used to
-  process the certificates. When not passed, this defaults to `/etc/letsencrypt`.\
+  process the certificates. When not passed, this defaults to
+  `/etc/letsencrypt`.\
   Note that this doesn't apply when the script is used as a Certbot hook, since
   the path to Certbot and the certificate is inferred from the call that Certbot
   makes.
@@ -70,7 +74,7 @@ renewal configuration of a certificate.
   to fetch an OCSP response for.
 
 - `-o,--output-dir`\
-  Specify the directory where OCSP responses are saved. When not passed, this
+  Specify the directory where OCSP staple files are saved. When not passed, this
   defaults to `/etc/nginx/ocsp-cache`.
 
  [Certbot]: https://github.com/certbot/certbot
