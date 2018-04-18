@@ -75,6 +75,8 @@ start_in_correct_mode() {
   else
     run_as_deploy_hook "${TEMP_OUTPUT_DIR}"
   fi
+
+  print_and_handle_result
 }
 
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
@@ -92,19 +94,17 @@ run_standalone() {
   # or otherwise all lineages in Certbot's dir
   if [[ -n "${CERT_LINEAGE+x}" ]]; then
     fetch_ocsp_response \
-      "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}" 1>&-
+      "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}"
   else
     local LINEAGES
     LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
     for CERT_NAME in ${LINEAGES}
     do
       fetch_ocsp_response \
-        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}" 1>&-
+        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}"
     done
     unset CERT_NAME
   fi
-
-  reload_nginx_and_print_result
 }
 
 # Run in deploy-hook mode, only checking the passed certificate
@@ -120,9 +120,33 @@ run_as_deploy_hook() {
   fi
 
   fetch_ocsp_response \
-    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}" 1>&-
+    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}"
+}
 
-  reload_nginx_and_print_result
+# Check if it's necessary to fetch a new OCSP response
+check_for_existing_ocsp_response() {
+  if [[ -f ${OUTPUT_DIR}/${CERT_NAME}.der ]]; then
+    local EXPIRY_DATE
+
+    # Inspect the existing local OCSP response, and parse its expiry date
+    EXPIRY_DATE=$(openssl ocsp \
+      -no_nonce \
+      -issuer "${CERT_DIR}/chain.pem" \
+      -cert "${CERT_DIR}/cert.pem" \
+      -verify_other "${CERT_DIR}/chain.pem" \
+      -respin "${OUTPUT_DIR}/${CERT_NAME}.der" 2>&- \
+      | grep -oP '(?<=Next Update: ).+$')
+
+    # Only continue fetching OCSP response if
+    # existing response expires within two days
+    if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
+      echo "---------------------------------------------------------------------"
+      echo "Not fetching OCSP response for lineage \"${CERT_NAME}\","
+      echo "because existing OCSP response is still valid."
+      echo "---------------------------------------------------------------------"
+      return 1
+    fi
+  fi
 }
 
 # Generate file used by ssl_stapling_file in nginx config of websites
@@ -135,6 +159,7 @@ fetch_ocsp_response() {
   case ${1} in
     --standalone)
       local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
+      check_for_existing_ocsp_response || return 0
       ;;
     --deploy_hook)
       local -r CERT_DIR="${RENEWED_LINEAGE}"
@@ -160,19 +185,25 @@ fetch_ocsp_response() {
 
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
+
+  # shellcheck disable=SC2004
+  RESPONSES_FETCHED=$((${RESPONSES_FETCHED+x}+1))
 }
 
-reload_nginx_and_print_result() {
-  if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
-    /usr/sbin/service nginx reload
-    echo \
-      "Fetching of OCSP response(s) successful!"\
-      "nginx is reloaded to cache any new responses."
-  else
-    echo \
-      "Fetching of OCSP responses successful!"\
-      "WARNING: Script is run without root privileges, so nginx has to be"\
-      "manually restarted to cache the new OCSP responses in memory."
+print_and_handle_result() {
+  if [[ -n ${RESPONSES_FETCHED+x} && ${RESPONSES_FETCHED} -gt 0 ]]; then
+    echo "---------------------------------------------------------------------"
+    echo "Successfully fetched ${RESPONSES_FETCHED} OCSP response(s)!"
+    if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
+      /usr/sbin/service nginx reload
+      echo "nginx is reloaded to cache any new responses."
+    else
+      {
+	echo "WARNING: Script is run without root privileges, so nginx has to be"
+	echo "manually restarted to cache the new OCSP responses in memory."
+      } >&2
+    fi
+    echo "---------------------------------------------------------------------"
   fi
 }
 
