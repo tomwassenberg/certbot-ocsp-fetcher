@@ -44,7 +44,7 @@ parse_cli_arguments() {
 
 # Set output directory if necessary and check if it's writeable
 prepare_output_dir() {
-  if [[ -n ${OUTPUT_DIR+x} ]]; then
+  if [[ -n ${OUTPUT_DIR:-} ]]; then
     if [[ ! -e ${OUTPUT_DIR} ]]; then
       # Don't yet fail if it's not possible to create the directory, so we can
       # exit with a custom error down below
@@ -70,7 +70,7 @@ start_in_correct_mode() {
   local -r TEMP_OUTPUT_DIR="$(mktemp -d)"
 
   # These two environment variables are set if this script is invoked by Certbot
-  if [[ -z ${RENEWED_DOMAINS+x} || -z ${RENEWED_LINEAGE+x} ]]; then
+  if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
     run_standalone "${TEMP_OUTPUT_DIR}"
   else
     run_as_deploy_hook "${TEMP_OUTPUT_DIR}"
@@ -92,7 +92,7 @@ run_standalone() {
 
   # Check specific lineage if passed on CLI,
   # or otherwise all lineages in Certbot's dir
-  if [[ -n "${CERT_LINEAGE+x}" ]]; then
+  if [[ -n "${CERT_LINEAGE:-}" ]]; then
     fetch_ocsp_response \
       "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}"
   else
@@ -112,7 +112,7 @@ run_standalone() {
 run_as_deploy_hook() {
   local -r TEMP_OUTPUT_DIR="${1}"
 
-  if [[ -n ${CERTBOT_DIR+x} ]]; then
+  if [[ -n ${CERTBOT_DIR:-} ]]; then
     exit_with_error \
       "ERROR: The -c/--certbot-dir parameter is not applicable"\
       "when Certbot is used as a Certbot hook, because the directory"
@@ -187,11 +187,11 @@ fetch_ocsp_response() {
   mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
 
   # shellcheck disable=SC2004
-  RESPONSES_FETCHED=$((${RESPONSES_FETCHED+x}+1))
+  RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
 }
 
 print_and_handle_result() {
-  if [[ -n ${RESPONSES_FETCHED+x} && ${RESPONSES_FETCHED} -gt 0 ]]; then
+  if [[ -n ${RESPONSES_FETCHED:-} && ${RESPONSES_FETCHED} -gt 0 ]]; then
     echo "---------------------------------------------------------------------"
     echo "Successfully fetched ${RESPONSES_FETCHED} OCSP response(s)!"
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
