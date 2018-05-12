@@ -27,9 +27,9 @@ The use of this script makes sure OCSP stapling in nginx works reliably, which
 makes e.g. the adoption of [OCSP Must-Staple] possible.
 
 ## Dependencies
-- bash
+- bash 4.4+
 - openssl (tested with 1.0.2g)
-- Certbot >=0.5.0
+- Certbot 0.5.0+
 - nginx (tested with 1.10.3)
 
 ## Usage
