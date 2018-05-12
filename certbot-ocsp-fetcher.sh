@@ -97,13 +97,13 @@ run_standalone() {
     fetch_ocsp_response \
       "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}"
   else
-    local LINEAGES
-    LINEAGES=$(ls "${CERTBOT_DIR}/live"); readonly LINEAGES
-    for CERT_NAME in ${LINEAGES}
+    set +f; shopt -s failglob
+    for CERT_NAME in ${CERTBOT_DIR}/live/*
     do
       fetch_ocsp_response \
-        "--standalone" "${CERT_NAME}" "${TEMP_OUTPUT_DIR}"
+	"--standalone" "$(basename "${CERT_NAME}")" "${TEMP_OUTPUT_DIR}"
     done
+    set -f
     unset CERT_NAME
   fi
 }
