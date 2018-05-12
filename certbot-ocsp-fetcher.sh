@@ -67,7 +67,8 @@ prepare_output_dir() {
 start_in_correct_mode() {
   # Create temporary directory to store OCSP response,
   # before having checked the certificate status therein
-  local -r TEMP_OUTPUT_DIR="$(mktemp -d)"
+  local TEMP_OUTPUT_DIR
+  TEMP_OUTPUT_DIR="$(mktemp -d)"
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
@@ -137,8 +138,11 @@ check_for_existing_ocsp_response() {
       -respin "${OUTPUT_DIR}/${CERT_NAME}.der" 2>&- \
       | grep -oP '(?<=Next Update: ).+$')
 
-    # Only continue fetching OCSP response if
-    # existing response expires within two days
+    # Only continue fetching OCSP response if existing response expires within
+    # two days.
+    # Note: A non-zero return code of either `date` command is not caught by
+    # Strict Mode, but this isn't critical, since it essentially skips the date
+    # check then and always fetches the OCSP response.
     if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
       echo "---------------------------------------------------------------------"
       echo "Not fetching OCSP response for lineage \"${CERT_NAME}\","
@@ -167,8 +171,8 @@ fetch_ocsp_response() {
   esac
   shift 3
 
-  local -r OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in \
-    "${CERT_DIR}/cert.pem")"
+  local OCSP_ENDPOINT
+  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${CERT_DIR}/cert.pem")"
   local -r OCSP_HOST="${OCSP_ENDPOINT#*://}"
 
   # Request, verify and temporarily save the actual OCSP response,
