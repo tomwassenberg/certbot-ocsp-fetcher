@@ -101,7 +101,7 @@ run_standalone() {
     for CERT_NAME in ${CERTBOT_DIR}/live/*
     do
       fetch_ocsp_response \
-	"--standalone" "$(basename "${CERT_NAME}")" "${TEMP_OUTPUT_DIR}"
+        "--standalone" "$(basename "${CERT_NAME}")" "${TEMP_OUTPUT_DIR}"
     done
     set -f
     unset CERT_NAME
@@ -203,8 +203,8 @@ print_and_handle_result() {
       echo "nginx is reloaded to cache any new responses."
     else
       {
-	echo "WARNING: Script is run without root privileges, so nginx has to be"
-	echo "manually restarted to cache the new OCSP responses in memory."
+        echo "WARNING: Script is run without root privileges, so nginx has to"
+        echo "be manually restarted to cache the new OCSP responses in memory."
       } >&2
     fi
     echo "---------------------------------------------------------------------"
