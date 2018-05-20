@@ -4,6 +4,7 @@
 set -eEfuo pipefail
 IFS=$'\n\t'
 
+SEPARATION_BAR="--------------------------------------------------------------"
 exit_with_error() {
   echo 1>&2 "${@}"
   exit 1
@@ -97,7 +98,7 @@ run_standalone() {
     fetch_ocsp_response \
       "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}"
   else
-    set +f; shopt -s failglob
+    set +f; shopt -s nullglob
     for CERT_NAME in ${CERTBOT_DIR}/live/*
     do
       fetch_ocsp_response \
@@ -144,10 +145,10 @@ check_for_existing_ocsp_response() {
     # Strict Mode, but this isn't critical, since it essentially skips the date
     # check then and always fetches the OCSP response.
     if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
-      echo "---------------------------------------------------------------------"
+      echo "${SEPARATION_BAR}"
       echo "Not fetching OCSP response for lineage \"${CERT_NAME}\","
       echo "because existing OCSP response is still valid."
-      echo "---------------------------------------------------------------------"
+      echo "${SEPARATION_BAR}"
       return 1
     fi
   fi
@@ -195,8 +196,8 @@ fetch_ocsp_response() {
 }
 
 print_and_handle_result() {
+  echo "${SEPARATION_BAR}"
   if [[ -n ${RESPONSES_FETCHED:-} && ${RESPONSES_FETCHED} -gt 0 ]]; then
-    echo "---------------------------------------------------------------------"
     echo "Successfully fetched ${RESPONSES_FETCHED} OCSP response(s)!"
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
@@ -207,8 +208,10 @@ print_and_handle_result() {
         echo "be manually restarted to cache the new OCSP responses in memory."
       } >&2
     fi
-    echo "---------------------------------------------------------------------"
+  else
+    echo "No OCSP responses were fetched."
   fi
+  echo "${SEPARATION_BAR}"
 }
 
 main() {
