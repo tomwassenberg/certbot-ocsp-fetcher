@@ -27,10 +27,15 @@ The use of this script makes sure OCSP stapling in nginx works reliably, which
 makes e.g. the adoption of [OCSP Must-Staple] possible.
 
 ## Dependencies
-- bash 4.4+
-- openssl (tested with 1.0.2g)
+- Bash 4.3+
 - Certbot 0.5.0+
 - nginx (tested with 1.10.3)
+- OpenSSL (tested with 1.0.2g)
+
+In OpenSSL 1.1.0+, a backwards-incompatible argument style change was
+introduced. To make `certbot-ocsp-fetcher` work from then on, please replace
+`"Host" "${OCSP_HOST}"` by `"Host=${OCSP_HOST}"` on [this] line. This change
+will be incorporated when OpenSSL 1.1.0+ is more widely used.
 
 ## Usage
 The script should be run with privileges that allow it to access the directory
@@ -81,4 +86,5 @@ will **not** be fetched.
  [#812]: https://trac.nginx.org/nginx/ticket/812
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
+ [this]: https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/e080b9838c1ee2f1cf05c6e9f366c19f986dc128/certbot-ocsp-fetcher.sh#L183
  [not saved]: https://github.com/certbot/certbot/issues/3394
