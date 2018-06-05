@@ -1,45 +1,48 @@
 #!/usr/bin/env bash
 
+# Redirect stdout to stderr, since the only *result*
+# of this tool is output to files anyway
+exec >&2
+
 # Unofficial Bash strict mode
 set -eEfuo pipefail
 IFS=$'\n\t'
 
 exit_with_error() {
-  echo 1>&2 "${@}"
+  echo "${@}"
   exit 1
 }
 
 print_usage() {
   exit_with_error \
-    "USAGE: ${0} [-c/--certbot-dir DIRECTORY]"\
+    "USAGE: ${0}"\
+    "[-c/--certbot-dir DIRECTORY]"\
     "[-n/--cert-name CERTNAME]"\
-    "[-o/--output-dir DIRECTORY]"
+    "[-o/--output-dir DIRECTORY]"\
+    "[-v/--verbose]"
 }
 parse_cli_arguments() {
-  while [[ ${#} -gt 1 ]]
-    do
-      local PARAMETER="${1}"; shift
+  while [[ ${#} -gt 0 ]]; do
+    local PARAMETER="${1}"
 
-      case ${PARAMETER} in
-        -c|--certbot-dir)
-          CERTBOT_DIR="$(readlink -fn -- "${1}")"; shift
-          ;;
-        -n|--cert-name)
-          CERT_LINEAGE="${1}"; shift
-          ;;
-        -o|--output-dir)
-          OUTPUT_DIR="$(readlink -fn -- "${1}")"; shift
-          ;;
-        *)
-          print_usage
-          ;;
-      esac
-    done
-
-   # All CLI parameters require a value, so a single argument is always invalid
-  if [[ ${#} == 1 ]]; then
-    print_usage
-  fi
+    case ${PARAMETER} in
+      -c|--certbot-dir)
+        CERTBOT_DIR="$(readlink -fn -- "${2}")"; shift 2
+        ;;
+      -n|--cert-name)
+        CERT_LINEAGE="${2}"; shift 2
+        ;;
+      -o|--output-dir)
+        OUTPUT_DIR="$(readlink -fn -- "${2}")"; shift 2
+        ;;
+      -v|--verbose)
+        VERBOSE_MODE=true; shift
+        ;;
+      *)
+        print_usage
+        ;;
+    esac
+  done
 }
 
 # Set output directory if necessary and check if it's writeable
@@ -139,7 +142,9 @@ check_for_existing_ocsp_response() {
     # Strict Mode, but this isn't critical, since it essentially skips the date
     # check then and always fetches the OCSP response.
     if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
-        echo -e "${CERT_NAME}:\t\tunfetched\tvalid response on disk" >&2
+      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+        echo -e "${CERT_NAME}:\t\tunfetched\tvalid response on disk"
+      fi
       return 1
     fi
   fi
@@ -185,18 +190,22 @@ fetch_ocsp_response() {
   # shellcheck disable=SC2004
   RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
 
-  echo -e "${CERT_NAME}:\t\tfetched"
+  if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+    echo -e "${CERT_NAME}:\t\tfetched"
+  fi
 }
 
 print_and_handle_result() {
   if [[ -n ${RESPONSES_FETCHED:-} && ${RESPONSES_FETCHED} -gt 0 ]]; then
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
-      echo -e "\nnginx reloaded:\t\t\ttrue"
+      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+        echo -e "\nnginx:\t\treloaded"
+      fi
     else
-      {
-        echo -e "\nnginx reloaded:\t\t\tfalse\tunprivileged, reload manually"
-      } >&2
+      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+        echo -e "\nnginx:\t\tnot reloaded\tunprivileged, reload manually"
+      fi
     fi
   fi
 }

@@ -44,7 +44,7 @@ You should run it daily, for instance by using the included systemd service +
 timer, or by adding it to the user's crontab. It can be run as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY]
-[-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY]`
+[-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY] [-v/--verbose]`
 
 The filename of the OCSP staple is the name of the certificate lineage (as used
 by Certbot) with the DER extension. Be sure to point nginx to the staple(s) by
@@ -55,11 +55,11 @@ When you want to use this tool as a deploy hook (available in Certbot >=0.17.0),
 append `--deploy-hook "/path/to/certbot-ocsp-fetcher.sh"` to the Certbot command
 you would normally use when requesting a certificate.
 
-When you can't use Certbot >=0.17.0, use the `--renew-hook` flag instead. The
-difference between `--deploy-hook` and `--renew-hook` is that a renew hook is
-not invoked during the first issuance in a certificate lineage, but only during
-its renewals. Be aware that in Certbot <0.10.0, hooks were [not saved] in the
-renewal configuration of a certificate.
+When you can't use Certbot >=0.17.0, use the `--renew-hook` flag in your
+Certbot command instead. The difference between `--deploy-hook` and
+`--renew-hook` is that a renew hook is not invoked during the first issuance in
+a certificate lineage, but only during its renewals. Be aware that in Certbot
+<0.10.0, hooks were [not saved] in the renewal configuration of a certificate.
 
 **Note:** If there is an OCSP staple with the target name already existing in
 the output directory which doesn't expire within two days, a new OCSP response
@@ -74,13 +74,17 @@ will **not** be fetched.
   the path to Certbot and the certificate is inferred from the call that Certbot
   makes.
 
-- `-n,--cert-name`\
+- `-n, --cert-name`\
   Specify the name of the certificate lineage (as used by Certbot) that you want
   to fetch an OCSP response for.
 
-- `-o,--output-dir`\
+- `-o, --output-dir`\
   Specify the directory where OCSP staple files are saved. When not passed, this
   defaults to the working directory.
+
+- `-v, --verbose`\
+  Makes the tool verbose. This prints informational messages about operations
+  performed on certificates lineages.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812
