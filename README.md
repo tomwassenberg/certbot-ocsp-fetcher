@@ -80,7 +80,7 @@ will **not** be fetched.
 
 - `-o,--output-dir`\
   Specify the directory where OCSP staple files are saved. When not passed, this
-  defaults to `/etc/nginx/ocsp-cache`.
+  defaults to the working directory.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812

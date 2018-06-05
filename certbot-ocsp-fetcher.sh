@@ -52,7 +52,7 @@ prepare_output_dir() {
       mkdir -p -- "${OUTPUT_DIR}" || true
     fi
   else
-    readonly OUTPUT_DIR="/etc/nginx/ocsp-cache"
+    readonly OUTPUT_DIR="."
   fi
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then
