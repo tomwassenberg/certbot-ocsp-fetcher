@@ -4,7 +4,6 @@
 set -eEfuo pipefail
 IFS=$'\n\t'
 
-SEPARATION_BAR="--------------------------------------------------------------"
 exit_with_error() {
   echo 1>&2 "${@}"
   exit 1
@@ -57,11 +56,7 @@ prepare_output_dir() {
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then
     exit_with_error \
-      "ERROR: You don't have write access to"\
-      "the output directory (\"${OUTPUT_DIR}\")."\
-      "Specify another folder using the -o/--output-dir"\
-      "flag or create the folder manually with permissions"\
-      "that allow it to be writeable for the current user."
+      "error:\t\tno write access to output directory (\"${OUTPUT_DIR}\")"
   fi
 }
 
@@ -89,7 +84,7 @@ run_standalone() {
 
   if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
     exit_with_error \
-      "ERROR: Certificate folder does not exist, or you don't have read access!"
+      "error:\t\tcan't access Certbot directory"
   fi
 
   # Check specific lineage if passed on CLI,
@@ -116,9 +111,8 @@ run_as_deploy_hook() {
 
   if [[ -n ${CERTBOT_DIR:-} ]]; then
     exit_with_error \
-      "ERROR: The -c/--certbot-dir parameter is not applicable"\
-      "when Certbot is used as a Certbot hook, because the directory"
-      "is already inferred from the call that Certbot makes."
+      # The directory is already inferred from the call that Certbot makes
+      "error:\t\tCertbot directory cannot be passed when run as Certbot hook"
   fi
 
   fetch_ocsp_response \
@@ -145,10 +139,7 @@ check_for_existing_ocsp_response() {
     # Strict Mode, but this isn't critical, since it essentially skips the date
     # check then and always fetches the OCSP response.
     if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
-      echo "${SEPARATION_BAR}"
-      echo "Not fetching OCSP response for lineage \"${CERT_NAME}\","
-      echo "because existing OCSP response is still valid."
-      echo "${SEPARATION_BAR}"
+        echo -e "${CERT_NAME}:\t\tunfetched\tvalid response on disk" >&2
       return 1
     fi
   fi
@@ -193,25 +184,21 @@ fetch_ocsp_response() {
 
   # shellcheck disable=SC2004
   RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
+
+  echo -e "${CERT_NAME}:\t\tfetched"
 }
 
 print_and_handle_result() {
-  echo "${SEPARATION_BAR}"
   if [[ -n ${RESPONSES_FETCHED:-} && ${RESPONSES_FETCHED} -gt 0 ]]; then
-    echo "Successfully fetched ${RESPONSES_FETCHED} OCSP response(s)!"
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
-      echo "nginx is reloaded to cache any new responses."
+      echo -e "\nnginx reloaded:\t\t\ttrue"
     else
       {
-        echo "WARNING: Script is run without root privileges, so nginx has to"
-        echo "be manually restarted to cache the new OCSP responses in memory."
+        echo -e "\nnginx reloaded:\t\t\tfalse\tunprivileged, reload manually"
       } >&2
     fi
-  else
-    echo "No OCSP responses were fetched."
   fi
-  echo "${SEPARATION_BAR}"
 }
 
 main() {
