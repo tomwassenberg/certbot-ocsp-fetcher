@@ -14,9 +14,10 @@ exit_with_error() {
 }
 
 print_usage() {
-  exit_with_error \
+  echo \
     "USAGE: ${0}"\
     "[-c/--certbot-dir DIRECTORY]"\
+    "[-h/--help]"\
     "[-n/--cert-name CERTNAME]"\
     "[-o/--output-dir DIRECTORY]"\
     "[-v/--verbose]"
@@ -29,6 +30,10 @@ parse_cli_arguments() {
       -c|--certbot-dir)
         CERTBOT_DIR="$(readlink -fn -- "${2}")"; shift 2
         ;;
+      -h|--help)
+        print_usage
+        exit
+        ;;
       -n|--cert-name)
         CERT_LINEAGE="${2}"; shift 2
         ;;
@@ -39,7 +44,8 @@ parse_cli_arguments() {
         VERBOSE_MODE=true; shift
         ;;
       *)
-        print_usage
+        # shellcheck disable=SC2046
+        exit_with_error $(print_usage)
         ;;
     esac
   done
