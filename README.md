@@ -1,27 +1,26 @@
 # certbot-ocsp-fetcher
-`certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. It's a Bash
-script that fetches and verifies OCSP responses for TLS certificates issued with
-[Certbot], to be used by nginx. This primes the OCSP cache of nginx, which is
-needed because of nginx's flawed implementation (see bug [#812]). In order for
-all this to be useful, you should know how to correctly set up OCSP stapling in
-nginx, for which you can take a look at [Mozilla's SSL Configuration Generator]
-for instance. If you use Certbot's `nginx` plugin, you can also add the
-`--staple-ocsp` flag to your `certbot --nginx` command(s) to configure OCSP
-stapling.
+`certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. It fetches and
+verifies OCSP responses for TLS certificates issued with [Certbot], to be used
+by nginx. This primes the OCSP cache of nginx, which is needed because of
+nginx's flawed implementation (see bug [#812]).
 
-The script works by utilizing the OCSP URL embedded in a certificate, and saving
-the OCSP responses in staples that can be referenced in the nginx
-configurations of the websites that use the certificates. The script can behave
-in two ways.
+In order for all this to be useful, you should know how to correctly set up
+OCSP stapling in nginx, for which you can take a look at
+[Mozilla's SSL Configuration Generator] for instance. If you use Certbot's
+`nginx` plugin, you can also add the `--staple-ocsp` flag to your
+`certbot --nginx` command(s) to configure OCSP stapling.
 
-When this script is called by Certbot as a deploy/renew hook, this is
-recognized by checking if the variables are set that Certbot passes to its
-deploy hooks. In this case only the OCSP response for the specific certificate
-that is (re)issued by Certbot, is fetched.
+The script works by utilizing the OCSP Responder URL embedded in a certificate,
+and saving the OCSP responses in staple files that can be referenced in the
+nginx configurations of the websites that use the certificates. The script can
+behave in two ways:
 
-When Certbot's variables are not passed, the script cycles through all sites
-that have a certificate lineage in Certbot's folder, and fetches an OCSP
-response.
+  - When this script is called by Certbot as a deploy/renew hook, only the OCSP
+    response for the specific certificate that is issued, is fetched.
+
+  - When Certbot's variables are not passed, the script cycles through all sites
+    that have a certificate lineage in Certbot's folder, and fetches an OCSP
+    response.
 
 The use of this script makes sure OCSP stapling in nginx works reliably, which
 makes e.g. the adoption of [OCSP Must-Staple] possible.
@@ -33,9 +32,9 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 - OpenSSL (tested with 1.0.2g)
 
 In OpenSSL 1.1.0+, a backwards-incompatible argument style change was
-introduced. To make `certbot-ocsp-fetcher` work from then on, please replace
-`"Host" "${OCSP_HOST}"` by `"Host=${OCSP_HOST}"` on [this] line. This change
-will be incorporated when OpenSSL 1.1.0+ is more widely used.
+introduced. To make `certbot-ocsp-fetcher` work with OpenSSL 1.1.0+, please replace
+`"Host" "${OCSP_HOST}"` by `"Host=${OCSP_HOST}"` on [this][ocsp_host] line. A
+check for the OpenSSL version will be implemented [soon][openssl-syntax-issue].
 
 ## Usage
 The script should be run with privileges that allow it to access the directory
@@ -84,11 +83,12 @@ will **not** be fetched.
 
 - `-v, --verbose`\
   Makes the tool verbose. This prints informational messages about operations
-  performed on certificates lineages.
+  performed on certificate lineages.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
- [this]: https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/e080b9838c1ee2f1cf05c6e9f366c19f986dc128/certbot-ocsp-fetcher.sh#L183
+ [ocsp_host]: https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/e080b9838c1ee2f1cf05c6e9f366c19f986dc128/certbot-ocsp-fetcher.sh#L183
+ [openssl-syntax-issue]: https://github.com/tomwassenberg/certbot-ocsp-fetcher/issues/16
  [not saved]: https://github.com/certbot/certbot/issues/3394
