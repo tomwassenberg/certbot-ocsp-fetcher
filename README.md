@@ -28,13 +28,13 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 ## Dependencies
 - Bash 4.3+
 - Certbot 0.5.0+
-- nginx (tested with 1.10.3)
-- OpenSSL (tested with 1.0.2g)
+- nginx (tested with 1.14.0)
+- OpenSSL (tested with 1.1.0g)
 
 In OpenSSL 1.1.0+, a backwards-incompatible argument style change was
-introduced. To make `certbot-ocsp-fetcher` work with OpenSSL 1.1.0+, please replace
-`"Host" "${OCSP_HOST}"` by `"Host=${OCSP_HOST}"` on [this][ocsp_host] line. A
-check for the OpenSSL version will be implemented [soon][openssl-syntax-issue].
+introduced. To make `certbot-ocsp-fetcher` work with OpenSSL <1.1.0, please replace
+`"Host=${OCSP_HOST}"` by `"Host" "${OCSP_HOST}"` on [this][ocsp_host] line. A
+check for the OpenSSL version should still be [implemented][openssl-syntax-issue].
 
 ## Usage
 The script should be run with privileges that allow it to access the directory
