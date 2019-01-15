@@ -22,6 +22,7 @@ print_usage() {
     "[-o/--output-dir DIRECTORY]"\
     "[-v/--verbose]"
 }
+
 parse_cli_arguments() {
   while [[ ${#} -gt 0 ]]; do
     local PARAMETER="${1}"
@@ -106,7 +107,7 @@ run_standalone() {
     for CERT_NAME in ${CERTBOT_DIR}/live/*
     do
       fetch_ocsp_response \
-        "--standalone" "$(basename "${CERT_NAME}")" "${TEMP_OUTPUT_DIR}"
+        "--standalone" "${CERT_NAME##*/}" "${TEMP_OUTPUT_DIR}"
     done
     set -f
     unset CERT_NAME
