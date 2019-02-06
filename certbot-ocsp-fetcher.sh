@@ -9,7 +9,7 @@ set -eEfuo pipefail
 IFS=$'\n\t'
 
 exit_with_error() {
-  echo "${@}"
+  echo -e "${@}"
   exit 1
 }
 
