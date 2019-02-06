@@ -30,7 +30,7 @@ parse_cli_arguments() {
     case ${PARAMETER} in
       -c|--certbot-dir)
         if [[ -n ${2:-} ]]; then
-          CERTBOT_DIR="$(readlink -fn -- "${2}")"; shift 2
+          CERTBOT_DIR="$(readlink -mn -- "${2}")"; shift 2
         else
           # shellcheck disable=SC2046
           exit_with_error $(print_usage)
@@ -50,7 +50,7 @@ parse_cli_arguments() {
         ;;
       -o|--output-dir)
         if [[ -n ${2:-} ]]; then
-          OUTPUT_DIR="$(readlink -fn -- "${2}")"; shift 2
+          OUTPUT_DIR="$(readlink -mn -- "${2}")"; shift 2
         else
           # shellcheck disable=SC2046
           exit_with_error $(print_usage)
