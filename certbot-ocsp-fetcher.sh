@@ -29,17 +29,32 @@ parse_cli_arguments() {
 
     case ${PARAMETER} in
       -c|--certbot-dir)
-        CERTBOT_DIR="$(readlink -fn -- "${2}")"; shift 2
+        if [[ -n ${2:-} ]]; then
+          CERTBOT_DIR="$(readlink -fn -- "${2}")"; shift 2
+        else
+          # shellcheck disable=SC2046
+          exit_with_error $(print_usage)
+        fi
         ;;
       -h|--help)
         print_usage
         exit
         ;;
       -n|--cert-name)
-        CERT_LINEAGE="${2}"; shift 2
+        if [[ -n ${2:-} ]]; then
+          CERT_LINEAGE="${2}"; shift 2
+        else
+          # shellcheck disable=SC2046
+          exit_with_error $(print_usage)
+        fi
         ;;
       -o|--output-dir)
-        OUTPUT_DIR="$(readlink -fn -- "${2}")"; shift 2
+        if [[ -n ${2:-} ]]; then
+          OUTPUT_DIR="$(readlink -fn -- "${2}")"; shift 2
+        else
+          # shellcheck disable=SC2046
+          exit_with_error $(print_usage)
+        fi
         ;;
       -v|--verbose)
         VERBOSE_MODE=true; shift
