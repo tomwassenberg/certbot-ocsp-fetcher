@@ -42,7 +42,7 @@ parse_cli_arguments() {
         ;;
       -n|--cert-name)
         if [[ -n ${2:-} ]]; then
-          CERT_LINEAGE="${2}"; shift 2
+          declare -gr CERT_LINEAGE="${2}"; shift 2
         else
           # shellcheck disable=SC2046
           exit_with_error $(print_usage)
@@ -57,7 +57,7 @@ parse_cli_arguments() {
         fi
         ;;
       -v|--verbose)
-        VERBOSE_MODE=true; shift
+        declare -gr VERBOSE_MODE="true"; shift
         ;;
       *)
         # shellcheck disable=SC2046
