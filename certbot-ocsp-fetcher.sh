@@ -9,7 +9,7 @@ set -eEfuo pipefail
 IFS=$'\n\t'
 
 exit_with_error() {
-  echo -e "${@}"
+  echo -e "${@}" >&2
   exit 1
 }
 
@@ -90,15 +90,16 @@ start_in_correct_mode() {
   # before having checked the certificate status therein
   local TEMP_OUTPUT_DIR
   TEMP_OUTPUT_DIR="$(mktemp -d)"
+  local RESPONSES_FETCHED
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
-    run_standalone "${TEMP_OUTPUT_DIR}"
+    RESPONSES_FETCHED="$(run_standalone "${TEMP_OUTPUT_DIR}")"
   else
-    run_as_deploy_hook "${TEMP_OUTPUT_DIR}"
+    RESPONSES_FETCHED="$(run_as_deploy_hook "${TEMP_OUTPUT_DIR}")"
   fi
 
-  print_and_handle_result
+  print_and_handle_result "${RESPONSES_FETCHED}"
 }
 
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
@@ -117,12 +118,17 @@ run_standalone() {
   if [[ -n "${CERT_LINEAGE:-}" ]]; then
     fetch_ocsp_response \
       "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}"
+
+    local -r RESPONSES_FETCHED=1
   else
+    local RESPONSES_FETCHED
     set +f; shopt -s nullglob
     for CERT_NAME in ${CERTBOT_DIR}/live/*
     do
       fetch_ocsp_response \
         "--standalone" "${CERT_NAME##*/}" "${TEMP_OUTPUT_DIR}"
+
+      RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
     done
     set -f
     unset CERT_NAME
@@ -142,6 +148,8 @@ run_as_deploy_hook() {
 
   fetch_ocsp_response \
     "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}"
+
+  local -r RESPONSES_FETCHED=1
 }
 
 # Check if it's necessary to fetch a new OCSP response
@@ -209,15 +217,14 @@ fetch_ocsp_response() {
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
 
-  # shellcheck disable=SC2004
-  RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
-
   if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-    echo -e "${CERT_NAME}:\t\tfetched"
+    echo -e "${CERT_NAME}:\t\tfetched" >&2
   fi
 }
 
 print_and_handle_result() {
+  local -r RESPONSES_FETCHED="${1}"
+
   if [[ -n ${RESPONSES_FETCHED:-} && ${RESPONSES_FETCHED} -gt 0 ]]; then
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
