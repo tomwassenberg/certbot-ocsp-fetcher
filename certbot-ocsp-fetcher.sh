@@ -121,13 +121,14 @@ run_standalone() {
     set +f; shopt -s nullglob
     for CERT_NAME in ${CERTBOT_DIR}/live/*
     do
-      fetch_ocsp_response \
-        "--standalone" "${CERT_NAME##*/}" "${TEMP_OUTPUT_DIR}"
-
-      RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
+      if fetch_ocsp_response \
+        "--standalone" "${CERT_NAME##*/}" "${TEMP_OUTPUT_DIR}"; then
+	RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
+      fi
     done
-    set -f
     unset CERT_NAME
+    set -f
+    echo "${RESPONSES_FETCHED:-0}"
   fi
 }
 
@@ -186,7 +187,10 @@ fetch_ocsp_response() {
   case ${1} in
     --standalone)
       local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
-      check_for_existing_ocsp_response || return 0
+
+      if ! check_for_existing_ocsp_response; then
+        return 1
+      fi
       ;;
     --deploy_hook)
       local -r CERT_DIR="${RENEWED_LINEAGE}"
