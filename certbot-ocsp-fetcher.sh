@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Redirect stdout to stderr, since the only *result*
-# of this tool is output to files anyway
-exec >&2
-
 # Unofficial Bash strict mode
 set -eEfuo pipefail
 IFS=$'\n\t'
@@ -173,7 +169,7 @@ check_for_existing_ocsp_response() {
     # check then and always fetches the OCSP response.
     if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
       if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "${CERT_NAME}:\t\tunfetched\tvalid response on disk"
+        echo -e "${CERT_NAME}:\t\tunfetched\tvalid response on disk" >&2
       fi
       return 1
     fi
@@ -229,11 +225,11 @@ print_and_handle_result() {
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
       if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "\nnginx:\t\treloaded"
+        echo -e "\nnginx:\t\treloaded" >&2
       fi
     else
       if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "\nnginx:\t\tnot reloaded\tunprivileged, reload manually"
+        echo -e "\nnginx:\t\tnot reloaded\tunprivileged, reload manually" >&2
       fi
     fi
   fi
