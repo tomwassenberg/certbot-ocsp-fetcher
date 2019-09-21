@@ -155,13 +155,14 @@ check_for_existing_ocsp_response() {
     local EXPIRY_DATE
 
     # Inspect the existing local OCSP response, and parse its expiry date
-    EXPIRY_DATE=$(openssl ocsp \
+    [[ $(openssl ocsp \
       -no_nonce \
       -issuer "${CERT_DIR}/chain.pem" \
       -cert "${CERT_DIR}/cert.pem" \
       -verify_other "${CERT_DIR}/chain.pem" \
-      -respin "${OUTPUT_DIR}/${CERT_NAME}.der" 2>&- \
-      | grep -oP '(?<=Next Update: ).+$')
+      -respin "${OUTPUT_DIR}/${CERT_NAME}.der" 2>&-) \
+      =~ "Next Update: "(.+)$ ]]
+    EXPIRY_DATE="${BASH_REMATCH[1]}"
 
     # Only continue fetching OCSP response if existing response expires within
     # two days.
@@ -204,15 +205,15 @@ fetch_ocsp_response() {
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
-  openssl ocsp \
+  [[ "$(openssl ocsp \
     -no_nonce \
     -url "${OCSP_ENDPOINT}" \
     -header "Host=${OCSP_HOST}" \
     -issuer "${CERT_DIR}/chain.pem" \
     -cert "${CERT_DIR}/cert.pem" \
     -verify_other "${CERT_DIR}/chain.pem" \
-    -respout "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" 2>&- \
-    | grep -q "^${CERT_DIR}/cert.pem: good$"
+    -respout "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" 2>&-)" \
+    =~ ^"${CERT_DIR}/cert.pem: good"$ ]]
 
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
