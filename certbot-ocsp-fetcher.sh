@@ -119,7 +119,7 @@ run_standalone() {
   else
     local RESPONSES_FETCHED
     set +f; shopt -s nullglob
-    for CERT_NAME in ${CERTBOT_DIR}/live/*
+    for CERT_NAME in "${CERTBOT_DIR}"/live/*
     do
       if fetch_ocsp_response \
         "--standalone" "${CERT_NAME##*/}" "${TEMP_OUTPUT_DIR}"; then
