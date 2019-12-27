@@ -152,6 +152,7 @@ run_as_deploy_hook() {
 # Check if it's necessary to fetch a new OCSP response
 check_for_existing_ocsp_response() {
   if [[ -f ${OUTPUT_DIR}/${cert_name}.der ]]; then
+    local -r expiry_regex='^\s*Next Update: (.+)$'
     local expiry_date
 
     # Inspect the existing local OCSP response, and parse its expiry date
@@ -160,8 +161,9 @@ check_for_existing_ocsp_response() {
       -issuer "${cert_dir}/chain.pem" \
       -cert "${cert_dir}/cert.pem" \
       -verify_other "${cert_dir}/chain.pem" \
-      -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-) \
-      =~ "Next Update: "(.+)$ ]]; then
+      -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&- | \
+      tail -n1) \
+      =~ ${expiry_regex} ]]; then
       echo >&2 \
         "Error encountered in parsing previously existing OCSP response," \
         "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
@@ -218,7 +220,8 @@ fetch_ocsp_response() {
     -issuer "${cert_dir}/chain.pem" \
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
-    -respout "${temp_output_dir}/${cert_name}.der" 2>&-)" \
+    -respout "${temp_output_dir}/${cert_name}.der" 2>&- | \
+    head -n1)" \
     =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
     exit_with_error \
       "Error encountered in the request, verification and/or validation of the" \
