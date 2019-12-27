@@ -21,9 +21,9 @@ print_usage() {
 
 parse_cli_arguments() {
   while [[ ${#} -gt 0 ]]; do
-    local PARAMETER="${1}"
+    local parameter="${1}"
 
-    case ${PARAMETER} in
+    case ${parameter} in
       -c|--certbot-dir)
         if [[ -n ${2:-} ]]; then
           CERTBOT_DIR="$(readlink -mn -- "${2}")"; shift 2
@@ -84,24 +84,24 @@ prepare_output_dir() {
 start_in_correct_mode() {
   # Create temporary directory to store OCSP response,
   # before having checked the certificate status therein
-  local TEMP_OUTPUT_DIR
-  TEMP_OUTPUT_DIR="$(mktemp -d)"
-  local RESPONSES_FETCHED
+  local temp_output_dir
+  temp_output_dir="$(mktemp -d)"
+  local responses_fetched
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
-    RESPONSES_FETCHED="$(run_standalone "${TEMP_OUTPUT_DIR}")"
+    responses_fetched="$(run_standalone "${temp_output_dir}")"
   else
-    RESPONSES_FETCHED="$(run_as_deploy_hook "${TEMP_OUTPUT_DIR}")"
+    responses_fetched="$(run_as_deploy_hook "${temp_output_dir}")"
   fi
 
-  print_and_handle_result "${RESPONSES_FETCHED}"
+  print_and_handle_result "${responses_fetched}"
 }
 
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
 # $1 - Path to temporary output directory
 run_standalone() {
-  local -r TEMP_OUTPUT_DIR="${1}"
+  local -r temp_output_dir="${1}"
   readonly CERTBOT_DIR="${CERTBOT_DIR:-/etc/letsencrypt}"
 
   if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
@@ -113,29 +113,29 @@ run_standalone() {
   # or otherwise all lineages in Certbot's dir
   if [[ -n "${CERT_LINEAGE:-}" ]]; then
     fetch_ocsp_response \
-      "--standalone" "${CERT_LINEAGE}" "${TEMP_OUTPUT_DIR}"
+      "--standalone" "${CERT_LINEAGE}" "${temp_output_dir}"
 
-    local -r RESPONSES_FETCHED=1
+    local -r responses_fetched=1
   else
-    local RESPONSES_FETCHED
+    local responses_fetched
     set +f; shopt -s nullglob
-    for CERT_NAME in "${CERTBOT_DIR}"/live/*
+    for cert_name in "${CERTBOT_DIR}"/live/*
     do
       if fetch_ocsp_response \
-        "--standalone" "${CERT_NAME##*/}" "${TEMP_OUTPUT_DIR}"; then
-	RESPONSES_FETCHED=$((${RESPONSES_FETCHED:-0}+1))
+        "--standalone" "${cert_name##*/}" "${temp_output_dir}"; then
+	      responses_fetched=$((${responses_fetched:-0}+1))
       fi
     done
-    unset CERT_NAME
+    unset cert_name
     set -f
-    echo "${RESPONSES_FETCHED:-0}"
+    echo "${responses_fetched:-0}"
   fi
 }
 
 # Run in deploy-hook mode, only checking the passed certificate
 # $1 - Path to temporary output directory
 run_as_deploy_hook() {
-  local -r TEMP_OUTPUT_DIR="${1}"
+  local -r temp_output_dir="${1}"
 
   if [[ -n ${CERTBOT_DIR:-} ]]; then
     exit_with_error \
@@ -144,34 +144,34 @@ run_as_deploy_hook() {
   fi
 
   fetch_ocsp_response \
-    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${TEMP_OUTPUT_DIR}"
+    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${temp_output_dir}"
 
-  local -r RESPONSES_FETCHED=1
+  local -r responses_fetched=1
 }
 
 # Check if it's necessary to fetch a new OCSP response
 check_for_existing_ocsp_response() {
-  if [[ -f ${OUTPUT_DIR}/${CERT_NAME}.der ]]; then
-    local EXPIRY_DATE
+  if [[ -f ${OUTPUT_DIR}/${cert_name}.der ]]; then
+    local expiry_date
 
     # Inspect the existing local OCSP response, and parse its expiry date
     [[ $(openssl ocsp \
       -no_nonce \
-      -issuer "${CERT_DIR}/chain.pem" \
-      -cert "${CERT_DIR}/cert.pem" \
-      -verify_other "${CERT_DIR}/chain.pem" \
-      -respin "${OUTPUT_DIR}/${CERT_NAME}.der" 2>&-) \
+      -issuer "${cert_dir}/chain.pem" \
+      -cert "${cert_dir}/cert.pem" \
+      -verify_other "${cert_dir}/chain.pem" \
+      -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-) \
       =~ "Next Update: "(.+)$ ]]
-    EXPIRY_DATE="${BASH_REMATCH[1]}"
+    expiry_date="${BASH_REMATCH[1]}"
 
     # Only continue fetching OCSP response if existing response expires within
     # two days.
     # Note: A non-zero return code of either `date` command is not caught by
     # Strict Mode, but this isn't critical, since it essentially skips the date
     # check then and always fetches the OCSP response.
-    if (( $(date -d "${EXPIRY_DATE}" +%s) > ($(date +%s) + 2*24*60*60) )); then
+    if (( $(date -d "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )); then
       if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "${CERT_NAME}:\t\tunfetched\tvalid response on disk" >&2
+        echo -e "${cert_name}:\t\tunfetched\tvalid response on disk" >&2
       fi
       return 1
     fi
@@ -183,50 +183,50 @@ check_for_existing_ocsp_response() {
 # $2 - Name of certificate lineage
 # $3 - Path to temporary output directory
 fetch_ocsp_response() {
-  local -r CERT_NAME="${2}";
-  local -r TEMP_OUTPUT_DIR="${3}"
+  local -r cert_name="${2}";
+  local -r temp_output_dir="${3}"
   case ${1} in
     --standalone)
-      local -r CERT_DIR="${CERTBOT_DIR}/live/${CERT_NAME}"
+      local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
       if ! check_for_existing_ocsp_response; then
         return 1
       fi
       ;;
     --deploy_hook)
-      local -r CERT_DIR="${RENEWED_LINEAGE}"
+      local -r cert_dir="${RENEWED_LINEAGE}"
       ;;
   esac
   shift 3
 
-  local OCSP_ENDPOINT
-  OCSP_ENDPOINT="$(openssl x509 -noout -ocsp_uri -in "${CERT_DIR}/cert.pem")"
-  local -r OCSP_HOST="${OCSP_ENDPOINT#*://}"
+  local ocsp_endpoint
+  ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem")"
+  local -r ocsp_host="${ocsp_endpoint#*://}"
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
   [[ "$(openssl ocsp \
     -no_nonce \
-    -url "${OCSP_ENDPOINT}" \
-    -header "Host=${OCSP_HOST}" \
-    -issuer "${CERT_DIR}/chain.pem" \
-    -cert "${CERT_DIR}/cert.pem" \
-    -verify_other "${CERT_DIR}/chain.pem" \
-    -respout "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" 2>&-)" \
-    =~ ^"${CERT_DIR}/cert.pem: good"$ ]]
+    -url "${ocsp_endpoint}" \
+    -header "Host=${ocsp_host}" \
+    -issuer "${cert_dir}/chain.pem" \
+    -cert "${cert_dir}/cert.pem" \
+    -verify_other "${cert_dir}/chain.pem" \
+    -respout "${temp_output_dir}/${cert_name}.der" 2>&-)" \
+    =~ ^"${cert_dir}/cert.pem: good"$ ]]
 
   # If arrived here status was good, so move OCSP response to definitive folder
-  mv "${TEMP_OUTPUT_DIR}/${CERT_NAME}.der" "${OUTPUT_DIR}/"
+  mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
 
   if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-    echo -e "${CERT_NAME}:\t\tfetched" >&2
+    echo -e "${cert_name}:\t\tfetched" >&2
   fi
 }
 
 print_and_handle_result() {
-  local -r RESPONSES_FETCHED="${1}"
+  local -r responses_fetched="${1}"
 
-  if [[ -n ${RESPONSES_FETCHED:-} && ${RESPONSES_FETCHED} -gt 0 ]]; then
+  if [[ -n ${responses_fetched:-} && ${responses_fetched} -gt 0 ]]; then
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
       if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
