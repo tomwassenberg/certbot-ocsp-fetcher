@@ -155,13 +155,19 @@ check_for_existing_ocsp_response() {
     local expiry_date
 
     # Inspect the existing local OCSP response, and parse its expiry date
-    [[ $(openssl ocsp \
+    if ! [[ $(openssl ocsp \
       -no_nonce \
       -issuer "${cert_dir}/chain.pem" \
       -cert "${cert_dir}/cert.pem" \
       -verify_other "${cert_dir}/chain.pem" \
       -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-) \
-      =~ "Next Update: "(.+)$ ]]
+      =~ "Next Update: "(.+)$ ]]; then
+      echo >&2 \
+        "Error encountered in parsing previously existing OCSP response," \
+        "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
+        "OCSP response."
+      return
+    fi
     expiry_date="${BASH_REMATCH[1]}"
 
     # Only continue fetching OCSP response if existing response expires within
@@ -205,7 +211,7 @@ fetch_ocsp_response() {
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
-  [[ "$(openssl ocsp \
+  if ! [[ "$(openssl ocsp \
     -no_nonce \
     -url "${ocsp_endpoint}" \
     -header "Host=${ocsp_host}" \
@@ -213,7 +219,11 @@ fetch_ocsp_response() {
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
     -respout "${temp_output_dir}/${cert_name}.der" 2>&-)" \
-    =~ ^"${cert_dir}/cert.pem: good"$ ]]
+    =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
+    exit_with_error \
+      "Error encountered in the request, verification and/or validation of the" \
+      "OCSP response for the certificate lineage located at \"${cert_dir}\""
+  fi
 
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
