@@ -152,25 +152,24 @@ run_as_deploy_hook() {
 # Check if it's necessary to fetch a new OCSP response
 check_for_existing_ocsp_response() {
   if [[ -f ${OUTPUT_DIR}/${cert_name}.der ]]; then
-    local -r expiry_regex='^\s*Next Update: (.+)$'
-    local expiry_date
 
     # Inspect the existing local OCSP response, and parse its expiry date
-    if ! [[ $(openssl ocsp \
+    local ocsp_response_next_update
+    ocsp_response_next_update="$(openssl ocsp \
       -no_nonce \
       -issuer "${cert_dir}/chain.pem" \
       -cert "${cert_dir}/cert.pem" \
       -verify_other "${cert_dir}/chain.pem" \
-      -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&- | \
-      tail -n1) \
-      =~ ${expiry_regex} ]]; then
+      -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-)"
+    local -r expiry_regex='^\s*Next Update: (.+)$'
+    if ! [[ ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
       echo >&2 \
         "Error encountered in parsing previously existing OCSP response," \
         "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
         "OCSP response."
       return
+    else local -r expiry_date="${BASH_REMATCH[1]}"
     fi
-    expiry_date="${BASH_REMATCH[1]}"
 
     # Only continue fetching OCSP response if existing response expires within
     # two days.
@@ -213,16 +212,16 @@ fetch_ocsp_response() {
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
-  if ! [[ "$(openssl ocsp \
+  local cert_status
+  cert_status="$(openssl ocsp \
     -no_nonce \
     -url "${ocsp_endpoint}" \
     -header "Host=${ocsp_host}" \
     -issuer "${cert_dir}/chain.pem" \
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
-    -respout "${temp_output_dir}/${cert_name}.der" 2>&- | \
-    head -n1)" \
-    =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
+    -respout "${temp_output_dir}/${cert_name}.der" 2>&-)"
+  if ! [[ ${cert_status%%$'\n'*} =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
     exit_with_error \
       "Error encountered in the request, verification and/or validation of the" \
       "OCSP response for the certificate lineage located at \"${cert_dir}\""
