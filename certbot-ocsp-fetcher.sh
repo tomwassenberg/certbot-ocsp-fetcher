@@ -86,16 +86,16 @@ start_in_correct_mode() {
   # before having checked the certificate status therein
   local temp_output_dir
   temp_output_dir="$(mktemp -d)"
-  local responses_fetched
+  declare -A CERTS_PROCESSED
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
-    responses_fetched="$(run_standalone "${temp_output_dir}")"
+    run_standalone "${temp_output_dir}"
   else
-    responses_fetched="$(run_as_deploy_hook "${temp_output_dir}")"
+    run_as_deploy_hook "${temp_output_dir}"
   fi
 
-  print_and_handle_result "${responses_fetched}"
+  print_and_handle_result
 }
 
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
@@ -114,21 +114,15 @@ run_standalone() {
   if [[ -n "${CERT_LINEAGE:-}" ]]; then
     fetch_ocsp_response \
       "--standalone" "${CERT_LINEAGE}" "${temp_output_dir}"
-
-    local -r responses_fetched=1
   else
-    local responses_fetched
     set +f; shopt -s nullglob
     for cert_name in "${CERTBOT_DIR}"/live/*
     do
-      if fetch_ocsp_response \
-        "--standalone" "${cert_name##*/}" "${temp_output_dir}"; then
-	      responses_fetched=$((${responses_fetched:-0}+1))
-      fi
+      fetch_ocsp_response \
+        "--standalone" "${cert_name##*/}" "${temp_output_dir}"
     done
     unset cert_name
     set -f
-    echo "${responses_fetched:-0}"
   fi
 }
 
@@ -145,8 +139,6 @@ run_as_deploy_hook() {
 
   fetch_ocsp_response \
     "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${temp_output_dir}"
-
-  local -r responses_fetched=1
 }
 
 # Check if it's necessary to fetch a new OCSP response
@@ -177,9 +169,6 @@ check_for_existing_ocsp_response() {
     # Strict Mode, but this isn't critical, since it essentially skips the date
     # check then and always fetches the OCSP response.
     if (( $(date -d "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )); then
-      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "${cert_name}:\t\tunfetched\tvalid response on disk" >&2
-      fi
       return 1
     fi
   fi
@@ -197,7 +186,8 @@ fetch_ocsp_response() {
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
       if ! check_for_existing_ocsp_response; then
-        return 1
+        CERTS_PROCESSED[${cert_name}]="false"
+        return
       fi
       ;;
     --deploy_hook)
@@ -230,15 +220,26 @@ fetch_ocsp_response() {
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
 
-  if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-    echo -e "${cert_name}:\t\tfetched" >&2
-  fi
+  CERTS_PROCESSED[${cert_name}]="true"
 }
 
 print_and_handle_result() {
-  local -r responses_fetched="${1}"
+  local reload_nginx="false"
 
-  if [[ -n ${responses_fetched:-} && ${responses_fetched} -gt 0 ]]; then
+  for cert in "${!CERTS_PROCESSED[@]}"; do
+    if [[ "${CERTS_PROCESSED["${cert}"]}" == "true" ]]; then
+      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+        echo -e "${cert}:\t\tfetched" >&2
+      fi
+      reload_nginx="true"
+    elif [[ "${CERTS_PROCESSED["${cert}"]}" == "false" ]]; then
+      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+        echo -e "${cert}:\t\tunfetched\tvalid response on disk" >&2
+      fi
+    fi
+  done
+
+  if [[ ${reload_nginx} == "true" ]]; then
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
       /usr/sbin/service nginx reload
       if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
