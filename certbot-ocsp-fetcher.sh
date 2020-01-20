@@ -86,6 +86,8 @@ start_in_correct_mode() {
   # before having checked the certificate status therein
   local temp_output_dir
   temp_output_dir="$(mktemp -d)"
+  readonly temp_output_dir
+
   declare -A CERTS_PROCESSED
 
   # These two environment variables are set if this script is invoked by Certbot
@@ -153,6 +155,8 @@ check_for_existing_ocsp_response() {
       -cert "${cert_dir}/cert.pem" \
       -verify_other "${cert_dir}/chain.pem" \
       -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-)"
+    readonly ocsp_response_next_update
+
     local -r expiry_regex='^\s*Next Update: (.+)$'
     if ! [[ ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
       echo >&2 \
@@ -198,6 +202,7 @@ fetch_ocsp_response() {
 
   local ocsp_endpoint
   ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem")"
+  readonly ocsp_endpoint
   local -r ocsp_host="${ocsp_endpoint#*://}"
 
   # Request, verify and temporarily save the actual OCSP response,
@@ -211,6 +216,7 @@ fetch_ocsp_response() {
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
     -respout "${temp_output_dir}/${cert_name}.der" 2>&-)"
+  readonly cert_status
   if ! [[ ${cert_status%%$'\n'*} =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
     exit_with_error \
       "Error encountered in the request, verification and/or validation of the" \
@@ -238,6 +244,7 @@ print_and_handle_result() {
       fi
     fi
   done
+  readonly reload_nginx
 
   if [[ ${reload_nginx} == "true" ]]; then
     if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
