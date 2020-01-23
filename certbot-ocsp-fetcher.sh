@@ -197,6 +197,9 @@ fetch_ocsp_response() {
     --deploy_hook)
       local -r cert_dir="${RENEWED_LINEAGE}"
       ;;
+    *)
+      return 1
+      ;;
   esac
   shift 3
 
