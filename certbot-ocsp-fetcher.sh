@@ -190,7 +190,7 @@ fetch_ocsp_response() {
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
       if ! check_for_existing_ocsp_response; then
-        CERTS_PROCESSED[${cert_name}]="false"
+        CERTS_PROCESSED[${cert_name}]="unfetched\tvalid response on disk"
         return
       fi
       ;;
@@ -229,22 +229,18 @@ fetch_ocsp_response() {
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
 
-  CERTS_PROCESSED[${cert_name}]="true"
+  CERTS_PROCESSED[${cert_name}]="fetched"
 }
 
 print_and_handle_result() {
   local reload_nginx="false"
 
   for cert in "${!CERTS_PROCESSED[@]}"; do
-    if [[ "${CERTS_PROCESSED["${cert}"]}" == "true" ]]; then
-      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "${cert}:\t\tfetched" >&2
-      fi
+    if [[ "${CERTS_PROCESSED["${cert}"]}" == "fetched" ]]; then
       reload_nginx="true"
-    elif [[ "${CERTS_PROCESSED["${cert}"]}" == "false" ]]; then
-      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
-        echo -e "${cert}:\t\tunfetched\tvalid response on disk" >&2
-      fi
+    fi
+    if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+      echo -e "${cert}:\t\t${CERTS_PROCESSED["${cert}"]}" >&2
     fi
   done
   readonly reload_nginx
