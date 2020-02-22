@@ -203,6 +203,17 @@ fetch_ocsp_response() {
   esac
   shift 3
 
+  # Verify that the leaf certificate is still valid. If the certificate is
+  # expired, we don't have to request a (new) OCSP response.
+  if ! openssl x509 \
+    -in "${cert_dir}/cert.pem" \
+    -checkend 0 \
+    -noout >&-; then
+
+    CERTS_PROCESSED[${cert_name}]="unfetched\tleaf certificate expired"
+    return
+  fi
+
   local ocsp_endpoint
   ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem")"
   readonly ocsp_endpoint
