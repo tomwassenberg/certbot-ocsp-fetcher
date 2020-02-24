@@ -13,6 +13,7 @@ print_usage() {
   echo \
     "USAGE: ${0}"\
     "[-c/--certbot-dir DIRECTORY]"\
+    "[-f/--force-fetch"\
     "[-h/--help]"\
     "[-n/--cert-name CERTNAME]"\
     "[-o/--output-dir DIRECTORY]"\
@@ -31,6 +32,9 @@ parse_cli_arguments() {
           # shellcheck disable=SC2046
           exit_with_error $(print_usage)
         fi
+        ;;
+      -f|--force)
+        FORCE_FETCH="true"; shift
         ;;
       -h|--help)
         print_usage
@@ -187,7 +191,7 @@ fetch_ocsp_response() {
     --standalone)
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
-      if check_for_existing_ocsp_response; then
+      if [[ ${FORCE_FETCH:-} != "true" ]] && check_for_existing_ocsp_response; then
         CERTS_PROCESSED[${cert_name}]="unfetched\tvalid response on disk"
         return
       fi
