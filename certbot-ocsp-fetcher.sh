@@ -145,37 +145,35 @@ run_as_deploy_hook() {
 
 # Check if it's necessary to fetch a new OCSP response
 check_for_existing_ocsp_response() {
-  if [[ -f ${OUTPUT_DIR}/${cert_name}.der ]]; then
+  [[ -f ${OUTPUT_DIR}/${cert_name}.der ]] || return 1
 
-    # Inspect the existing local OCSP response, and parse its expiry date
-    local ocsp_response_next_update
-    ocsp_response_next_update="$(openssl ocsp \
-      -no_nonce \
-      -issuer "${cert_dir}/chain.pem" \
-      -cert "${cert_dir}/cert.pem" \
-      -verify_other "${cert_dir}/chain.pem" \
-      -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-)"
-    readonly ocsp_response_next_update
+  # Inspect the existing local OCSP response, and parse its expiry date
+  local ocsp_response_next_update
+  ocsp_response_next_update="$(openssl ocsp \
+    -no_nonce \
+    -issuer "${cert_dir}/chain.pem" \
+    -cert "${cert_dir}/cert.pem" \
+    -verify_other "${cert_dir}/chain.pem" \
+    -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-)"
+  readonly ocsp_response_next_update
 
-    local -r expiry_regex='^\s*Next Update: (.+)$'
-    if ! [[ ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
-      echo >&2 \
-        "Error encountered in parsing previously existing OCSP response," \
-        "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
-        "OCSP response."
-      return
-    else local -r expiry_date="${BASH_REMATCH[1]}"
-    fi
-
-    # Only continue fetching OCSP response if existing response expires within
-    # two days.
-    # Note: A non-zero return code of either `date` command is not caught by
-    # Strict Mode, but this isn't critical, since it essentially skips the date
-    # check then and always fetches the OCSP response.
-    if (( $(date -d "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )); then
-      return 1
-    fi
+  local -r expiry_regex='^\s*Next Update: (.+)$'
+  if ! [[ ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
+    echo >&2 \
+      "Error encountered in parsing previously existing OCSP response," \
+      "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
+      "OCSP response."
+    return 1
+  else local -r expiry_date="${BASH_REMATCH[1]}"
   fi
+
+  # Only continue fetching OCSP response if existing response expires within
+  # two days.
+  # Note: A non-zero return code of either `date` command is not caught by
+  # Strict Mode, but this isn't critical, since it essentially skips the date
+  # check then and always fetches the OCSP response.
+  (( $(date -d "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )) || \
+    return 1
 }
 
 # Generate file used by ssl_stapling_file in nginx config of websites
@@ -189,7 +187,7 @@ fetch_ocsp_response() {
     --standalone)
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
-      if ! check_for_existing_ocsp_response; then
+      if check_for_existing_ocsp_response; then
         CERTS_PROCESSED[${cert_name}]="unfetched\tvalid response on disk"
         return
       fi
