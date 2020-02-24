@@ -17,10 +17,12 @@ print_usage() {
     "[-h/--help]"\
     "[-n/--cert-name CERTNAME]"\
     "[-o/--output-dir DIRECTORY]"\
-    "[-v/--verbose]"
+    "[-v/--verbose] [-v/--verbose]"
 }
 
 parse_cli_arguments() {
+  declare -gi VERBOSITY=0
+
   while [[ ${#} -gt 0 ]]; do
     local parameter="${1}"
 
@@ -57,7 +59,7 @@ parse_cli_arguments() {
         fi
         ;;
       -v|--verbose)
-        declare -gr VERBOSE_MODE="true"; shift
+        VERBOSITY+=1; shift
         ;;
       *)
         # shellcheck disable=SC2046
@@ -65,6 +67,16 @@ parse_cli_arguments() {
         ;;
     esac
   done
+
+  # When not parsed, the stdout and/or stderr output of all external commands
+  # we call in the script is redirected to file descriptor 3.  Depending on the
+  # desired verbosity, we redirect this file descriptor to either stderr or to
+  # /dev/null.
+  if (( "${VERBOSITY}" >= 2 )); then
+    exec 3>&2
+  else
+    exec 3>/dev/null
+  fi
 }
 
 # Set output directory if necessary and check if it's writeable
@@ -158,7 +170,7 @@ check_for_existing_ocsp_response() {
     -issuer "${cert_dir}/chain.pem" \
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
-    -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&-)"
+    -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&3)"
   readonly ocsp_response_next_update
 
   local -r expiry_regex='^\s*Next Update: (.+)$'
@@ -210,14 +222,14 @@ fetch_ocsp_response() {
   if ! openssl x509 \
     -in "${cert_dir}/cert.pem" \
     -checkend 0 \
-    -noout >&-; then
+    -noout >&3 2>&1; then
 
     CERTS_PROCESSED[${cert_name}]="unfetched\tleaf certificate expired"
     return
   fi
 
   local ocsp_endpoint
-  ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem")"
+  ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem" 2>&3)"
   readonly ocsp_endpoint
   local -r ocsp_host="${ocsp_endpoint#*://}"
 
@@ -252,20 +264,20 @@ print_and_handle_result() {
     if [[ "${CERTS_PROCESSED["${cert}"]}" == "fetched" ]]; then
       reload_nginx="true"
     fi
-    if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+    if (( "${VERBOSITY}" >= 1 )); then
       echo -e "${cert}:\t\t${CERTS_PROCESSED["${cert}"]}" >&2
     fi
   done
   readonly reload_nginx
 
   if [[ ${reload_nginx} == "true" ]]; then
-    if pgrep -fu "${EUID}" 'nginx: master process' 1>/dev/null; then
+    if pgrep -fu "${EUID}" 'nginx: master process' >&3 2>&1; then
       /usr/sbin/service nginx reload
-      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+      if (( "${VERBOSITY}" >= 1 )); then
         echo -e "\nnginx:\t\treloaded" >&2
       fi
     else
-      if [[ "${VERBOSE_MODE:-}" == "true" ]]; then
+      if (( "${VERBOSITY}" >= 1 )); then
         echo -e "\nnginx:\t\tnot reloaded\tunprivileged, reload manually" >&2
       fi
     fi
