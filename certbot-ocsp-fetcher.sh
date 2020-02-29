@@ -237,7 +237,8 @@ fetch_ocsp_response() {
   local ocsp_endpoint
   ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem" 2>&3)"
   readonly ocsp_endpoint
-  local -r ocsp_host="${ocsp_endpoint#*://}"
+  local ocsp_host="${ocsp_endpoint##*://}"
+  readonly ocsp_host="${ocsp_host%%/*}"
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
