@@ -5,7 +5,7 @@ set -eEfuo pipefail
 IFS=$'\n\t'
 
 exit_with_error() {
-  echo -e "${@}" >&2
+  echo "${@}" >&2
   exit 1
 }
 
@@ -93,7 +93,7 @@ prepare_output_dir() {
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then
     exit_with_error \
-      "error:\t\tno write access to output directory (\"${OUTPUT_DIR}\")"
+      "error:"$'\t\t'"no write access to output directory (\"${OUTPUT_DIR}\")"
   fi
 }
 
@@ -124,7 +124,7 @@ run_standalone() {
 
   if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
     exit_with_error \
-      "error:\t\tcan't access Certbot directory"
+      "error:"$'\t\t'"can't access Certbot directory"
   fi
 
   # Check specific lineage if passed on CLI,
@@ -152,7 +152,7 @@ run_as_deploy_hook() {
   if [[ -n ${CERTBOT_DIR:-} ]]; then
     exit_with_error \
       # The directory is already inferred from the call that Certbot makes
-      "error:\t\tCertbot directory cannot be passed when run as Certbot hook"
+      "error:"$'\t\t'"Certbot directory cannot be passed when run as Certbot hook"
   fi
 
   fetch_ocsp_response \
@@ -209,7 +209,7 @@ fetch_ocsp_response() {
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
       if [[ ${FORCE_FETCH:-} != "true" ]] && check_for_existing_ocsp_response; then
-        CERTS_PROCESSED[${cert_name}]="unfetched\tvalid response on disk"
+        CERTS_PROCESSED["${cert_name}"]="unfetched"$'\t'"valid response on disk"
         return
       fi
       ;;
@@ -230,7 +230,7 @@ fetch_ocsp_response() {
     -noout >&3 2>&1; then
 
     ERROR_ENCOUNTERED="true"
-    CERTS_PROCESSED[${cert_name}]="unfetched\tleaf certificate expired"
+    CERTS_PROCESSED["${cert_name}"]="unfetched"$'\t'"leaf certificate expired"
     return
   fi
 
@@ -256,7 +256,7 @@ fetch_ocsp_response() {
   readonly cert_status
   if [[ "${cert_status_rc}" != 0 ]]; then
     ERROR_ENCOUNTERED="true"
-    CERTS_PROCESSED["${cert_name}"]="unfetched\treason: ${cert_status//[[:space:]]/ }"
+    CERTS_PROCESSED["${cert_name}"]="unfetched"$'\t'"{cert_status//[[:space:]]/ }"
     return
   fi
   if ! [[ ${cert_status%%$'\n'*} =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
@@ -268,33 +268,35 @@ fetch_ocsp_response() {
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
 
-  CERTS_PROCESSED[${cert_name}]="fetched"
+  CERTS_PROCESSED["${cert_name}"]="fetched"
 }
 
 print_and_handle_result() {
-  local reload_nginx="false"
+  local header="LINEAGE"$'\t'"FETCH RESULT"$'\t'"REASON"
 
-  for cert in "${!CERTS_PROCESSED[@]}"; do
-    if [[ "${CERTS_PROCESSED["${cert}"]}" == "fetched" ]]; then
-      reload_nginx="true"
-    fi
-    if (( "${VERBOSITY}" >= 1 )); then
-      echo -e "${cert}:\t\t${CERTS_PROCESSED["${cert}"]}" >&2
+  for cert_name in "${!CERTS_PROCESSED[@]}"; do
+    local certs_processed_formatted+=$'\n'"${cert_name}"$'\t'"${CERTS_PROCESSED["${cert_name}"]}"
+  done
+  readonly certs_processed_formatted
+  unset cert_name
+  local output="${header}${certs_processed_formatted}"
+
+  for cert_name in "${!CERTS_PROCESSED[@]}"; do
+    if [[ "${CERTS_PROCESSED["${cert_name}"]}" == "fetched" ]]; then
+      if pgrep -fu "${EUID}" 'nginx: master process' >&3 2>&1; then
+        /usr/sbin/service nginx reload
+        local -r nginx_status=$'\n\n\t'"nginx reloaded"
+      else
+        local -r nginx_status=$'\n\n\t'"nginx not reloaded"$'\t'"unprivileged, reload manually"
+      fi
+      readonly output+="${nginx_status}"
+      break
     fi
   done
-  readonly reload_nginx
+  unset cert_name
 
-  if [[ ${reload_nginx} == "true" ]]; then
-    if pgrep -fu "${EUID}" 'nginx: master process' >&3 2>&1; then
-      /usr/sbin/service nginx reload
-      if (( "${VERBOSITY}" >= 1 )); then
-        echo -e "\nnginx:\t\treloaded" >&2
-      fi
-    else
-      if (( "${VERBOSITY}" >= 1 )); then
-        echo -e "\nnginx:\t\tnot reloaded\tunprivileged, reload manually" >&2
-      fi
-    fi
+  if (( "${VERBOSITY}" >= 1 )); then
+    column -ents$'\t' <<< "${output}"
   fi
 
   [[ "${ERROR_ENCOUNTERED:-}" != "true" ]]
