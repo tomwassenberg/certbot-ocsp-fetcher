@@ -165,22 +165,27 @@ check_for_existing_ocsp_response() {
 
   # Inspect the existing local OCSP response, and parse its expiry date
   local ocsp_response_next_update
+  set +e
   ocsp_response_next_update="$(openssl ocsp \
     -no_nonce \
     -issuer "${cert_dir}/chain.pem" \
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
     -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&3)"
+  local -r ocsp_response_next_update_rc=${?}
+  set -e
   readonly ocsp_response_next_update
 
+
   local -r expiry_regex='^\s*Next Update: (.+)$'
-  if ! [[ ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
+  if [[ "${ocsp_response_next_update_rc}" != 0 || ! ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
     echo >&2 \
       "Error encountered in parsing previously existing OCSP response," \
       "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
       "OCSP response."
     return 1
-  else local -r expiry_date="${BASH_REMATCH[1]}"
+  else
+    local -r expiry_date="${BASH_REMATCH[1]}"
   fi
 
   # Only continue fetching OCSP response if existing response expires within
@@ -224,6 +229,7 @@ fetch_ocsp_response() {
     -checkend 0 \
     -noout >&3 2>&1; then
 
+    ERROR_ENCOUNTERED="true"
     CERTS_PROCESSED[${cert_name}]="unfetched\tleaf certificate expired"
     return
   fi
@@ -236,6 +242,7 @@ fetch_ocsp_response() {
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
   local cert_status
+  set +e
   cert_status="$(openssl ocsp \
     -no_nonce \
     -url "${ocsp_endpoint}" \
@@ -244,7 +251,14 @@ fetch_ocsp_response() {
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
     -respout "${temp_output_dir}/${cert_name}.der" 2>&-)"
+  local -r cert_status_rc=${?}
+  set -e
   readonly cert_status
+  if [[ "${cert_status_rc}" != 0 ]]; then
+    ERROR_ENCOUNTERED="true"
+    CERTS_PROCESSED["${cert_name}"]="unfetched\treason: ${cert_status//[[:space:]]/ }"
+    return
+  fi
   if ! [[ ${cert_status%%$'\n'*} =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
     exit_with_error \
       "Error encountered in the request, verification and/or validation of the" \
@@ -282,6 +296,8 @@ print_and_handle_result() {
       fi
     fi
   fi
+
+  [[ "${ERROR_ENCOUNTERED:-}" != "true" ]]
 }
 
 main() {
