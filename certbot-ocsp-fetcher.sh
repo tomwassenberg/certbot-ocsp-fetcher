@@ -104,7 +104,7 @@ start_in_correct_mode() {
   temp_output_dir="$(mktemp -d)"
   readonly temp_output_dir
 
-  declare -A CERTS_PROCESSED
+  declare -A certs_processed
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
@@ -221,7 +221,7 @@ fetch_ocsp_response() {
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
       if [[ ${FORCE_FETCH:-} != "true" ]] && check_for_existing_ocsp_response; then
-        CERTS_PROCESSED["${cert_name}"]="unfetched"$'\t'"valid response on disk"
+        certs_processed["${cert_name}"]="unfetched"$'\t'"valid response on disk"
         return
       fi
       ;;
@@ -242,7 +242,7 @@ fetch_ocsp_response() {
     -noout >&3 2>&1; then
 
     ERROR_ENCOUNTERED="true"
-    CERTS_PROCESSED["${cert_name}"]="unfetched"$'\t'"leaf certificate expired"
+    certs_processed["${cert_name}"]="unfetched"$'\t'"leaf certificate expired"
     return
   fi
 
@@ -269,7 +269,7 @@ fetch_ocsp_response() {
   readonly cert_status
   if [[ "${cert_status_rc}" != 0 ]]; then
     ERROR_ENCOUNTERED="true"
-    CERTS_PROCESSED["${cert_name}"]="unfetched"$'\t'"{cert_status//[[:space:]]/ }"
+    certs_processed["${cert_name}"]="unfetched"$'\t'"{cert_status//[[:space:]]/ }"
     return
   fi
   if ! [[ ${cert_status%%$'\n'*} =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
@@ -281,21 +281,21 @@ fetch_ocsp_response() {
   # If arrived here status was good, so move OCSP response to definitive folder
   mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
 
-  CERTS_PROCESSED["${cert_name}"]="fetched"
+  certs_processed["${cert_name}"]="fetched"
 }
 
 print_and_handle_result() {
   local header="LINEAGE"$'\t'"FETCH RESULT"$'\t'"REASON"
 
-  for cert_name in "${!CERTS_PROCESSED[@]}"; do
-    local certs_processed_formatted+=$'\n'"${cert_name}"$'\t'"${CERTS_PROCESSED["${cert_name}"]}"
+  for cert_name in "${!certs_processed[@]}"; do
+    local certs_processed_formatted+=$'\n'"${cert_name}"$'\t'"${certs_processed["${cert_name}"]}"
   done
   readonly certs_processed_formatted
   unset cert_name
   local output="${header}${certs_processed_formatted}"
 
-  for cert_name in "${!CERTS_PROCESSED[@]}"; do
-    if [[ "${CERTS_PROCESSED["${cert_name}"]}" == "fetched" ]]; then
+  for cert_name in "${!certs_processed[@]}"; do
+    if [[ "${certs_processed["${cert_name}"]}" == "fetched" ]]; then
       if pgrep -fu "${EUID}" 'nginx: master process' >&3 2>&1; then
         /usr/sbin/service nginx reload
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
