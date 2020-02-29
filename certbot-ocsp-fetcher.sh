@@ -108,9 +108,9 @@ start_in_correct_mode() {
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
-    run_standalone "${temp_output_dir}"
+    run_standalone
   else
-    run_as_deploy_hook "${temp_output_dir}"
+    run_as_deploy_hook
   fi
 
   print_and_handle_result
@@ -119,7 +119,6 @@ start_in_correct_mode() {
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
 # $1 - Path to temporary output directory
 run_standalone() {
-  local -r temp_output_dir="${1}"
   readonly CERTBOT_DIR="${CERTBOT_DIR:-/etc/letsencrypt}"
 
   if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
@@ -147,8 +146,6 @@ run_standalone() {
 # Run in deploy-hook mode, only checking the passed certificate
 # $1 - Path to temporary output directory
 run_as_deploy_hook() {
-  local -r temp_output_dir="${1}"
-
   if [[ -n ${CERTBOT_DIR:-} ]]; then
     # The directory is already inferred from the environment variable that
     # Certbot passes
