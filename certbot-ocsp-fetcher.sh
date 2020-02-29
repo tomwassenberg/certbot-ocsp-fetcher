@@ -150,9 +150,24 @@ run_as_deploy_hook() {
   local -r temp_output_dir="${1}"
 
   if [[ -n ${CERTBOT_DIR:-} ]]; then
+    # The directory is already inferred from the environment variable that
+    # Certbot passes
     exit_with_error \
-      # The directory is already inferred from the call that Certbot makes
-      "error:"$'\t\t'"Certbot directory cannot be passed when run as Certbot hook"
+      "error:"$'\t\t'"-c/--certbot-dir cannot be passed when run as Certbot hook"
+  fi
+
+  if [[ -n ${FORCE_FETCH:-} ]]; then
+    # When run as deploy hook the behavior of this flag is used by default.
+    # Therefore passing this flag would not have any effect.
+    exit_with_error \
+      "error:"$'\t\t'"-f/--force-fetch cannot be passed when run as Certbot hook"
+  fi
+
+  if [[ -n ${CERT_LINEAGE:-} ]]; then
+    # The certificate lineage is already inferred from the environment
+    # variable that Certbot passes
+    exit_with_error \
+      "error:"$'\t\t'"-n/--cert-name cannot be passed when run as Certbot hook"
   fi
 
   fetch_ocsp_response \
