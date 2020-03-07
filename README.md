@@ -30,12 +30,7 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 - BSD column (included in stock Ubuntu within the `util-linux` package)
 - Certbot 0.5.0+
 - nginx (tested with 1.14.0)
-- OpenSSL (tested with 1.1.0g)
-
-In OpenSSL 1.1.0+, a backwards-incompatible argument style change was
-introduced. To make `certbot-ocsp-fetcher` work with OpenSSL <1.1.0, please replace
-`"Host=${OCSP_HOST}"` by `"Host" "${OCSP_HOST}"` on [this][ocsp_host] line. A
-check for the OpenSSL version should still be [implemented][openssl-syntax-issue].
+- OpenSSL (1.1.0+)
 
 ## Usage
 The script should be run with privileges that allow it to access the directory
@@ -43,8 +38,9 @@ that Certbot stores its certificates in (by default `/etc/letsencrypt/live`).
 You should run it daily, for instance by using the included systemd service +
 timer, or by adding it to the user's crontab. It can be run as follows:
 
-`# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY]
-[-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY] [-v/--verbose]`
+`# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-fetch]
+[-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY]
+[-v/--verbose]`
 
 The filename of the OCSP staple is the name of the certificate lineage (as used
 by Certbot) with the DER extension. Be sure to point nginx to the staple(s) by
@@ -63,20 +59,33 @@ a certificate lineage, but only during its renewals. Be aware that in Certbot
 
 **Note:** If there is an OCSP staple with the target name already existing in
 the output directory which doesn't expire within two days, a new OCSP response
-will **not** be fetched.
+will **not** be fetched. Use the `-f/--force-fetch` flag to override this
+behavior (see below).
 
 ### CLI parameters
 - `-c, --certbot-dir`\
   Specify the configuration directory of the Certbot instance, that is used to
   process the certificates. When not passed, this defaults to
   `/etc/letsencrypt`.\
-  Note that this doesn't apply when the script is used as a Certbot hook, since
-  the path to Certbot and the certificate is inferred from the call that Certbot
-  makes.
+  This flag cannot be used when the script is invoked as a deploy hook by
+  Certbot. In that case, the path to Certbot and the certificate is inferred from
+  the call that Certbot makes.
+
+- `-f, --force-fetch`\
+  Ignore possibly existing valid OCSP responses on disk, and always fetch new
+  responses from the OCSP responder.\
+  This flag cannot be used when the script is invoked as a deploy hook by
+  Certbot.
+
+- `-h, --help`\
+  Print the correct usage of the script.
 
 - `-n, --cert-name`\
-  Specify the name of the certificate lineage (as used by Certbot) that you want
-  to fetch an OCSP response for.
+  Specify the name of the certificate lineage (as used by Certbot) that you
+  want to fetch an OCSP response for. When not specified, all certificate
+  lineages in Certbot's configuration directory will be processed.\
+  This flag cannot be used when the script is invoked as a deploy hook by
+  Certbot.
 
 - `-o, --output-dir`\
   Specify the directory where OCSP staple files are saved. When not passed, this
@@ -84,7 +93,8 @@ will **not** be fetched.
 
 - `-v, --verbose`\
   Makes the tool verbose. This prints informational messages about operations
-  performed on certificate lineages.
+  performed on certificate lineages. This can be specified multiple times for
+  more verbosity.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812

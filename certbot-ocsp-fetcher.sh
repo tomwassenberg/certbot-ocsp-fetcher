@@ -18,7 +18,7 @@ parse_cli_arguments() {
   local -r usage=(
     "USAGE: ${0}"
     "[-c/--certbot-dir DIRECTORY]"
-    "[-f/--force-fetch"
+    "[-f/--force-fetch]"
     "[-h/--help]"
     "[-n/--cert-name CERTNAME]"
     "[-o/--output-dir DIRECTORY]"
