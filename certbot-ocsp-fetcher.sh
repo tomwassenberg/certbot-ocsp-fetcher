@@ -254,9 +254,9 @@ fetch_ocsp_response() {
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
-  local cert_status
+  local ocsp_call_output
   set +e
-  cert_status="$(openssl ocsp \
+  ocsp_call_output="$(openssl ocsp \
     -no_nonce \
     -url "${ocsp_endpoint}" \
     -header "Host=${ocsp_host}" \
@@ -264,18 +264,16 @@ fetch_ocsp_response() {
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
     -respout "${temp_output_dir}/${cert_name}.der" 2>&-)"
-  local -r cert_status_rc=${?}
+  local -r ocsp_call_rc=${?}
   set -e
-  readonly cert_status
-  if [[ "${cert_status_rc}" != 0 ]]; then
+  readonly ocsp_call_output
+  local cert_status="${ocsp_call_output%%$'\n'*}"
+  readonly cert_status="${cert_status#${cert_dir}/cert.pem: }"
+
+  if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED="true"
-    certs_processed["${cert_name}"]="unfetched"$'\t'"{cert_status//[[:space:]]/ }"
+    certs_processed["${cert_name}"]="unfetched"$'\t'"${ocsp_call_output//[[:space:]]/ }"
     return
-  fi
-  if ! [[ ${cert_status%%$'\n'*} =~ ^"${cert_dir}/cert.pem: good"$ ]]; then
-    exit_with_error \
-      "Error encountered in the request, verification and/or validation of the" \
-      "OCSP response for the certificate lineage located at \"${cert_dir}\""
   fi
 
   # If arrived here status was good, so move OCSP response to definitive folder
