@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
 # Unofficial Bash strict mode
-set -eEfuo pipefail
+set \
+  -o errexit \
+  -o errtrace \
+  -o noglob \
+  -o nounset \
+  -o pipefail
 IFS=$'\n\t'
 
 exit_with_error() {
@@ -91,7 +96,9 @@ prepare_output_dir() {
     if [[ ! -e ${OUTPUT_DIR} ]]; then
       # Don't yet fail if it's not possible to create the directory, so we can
       # exit with a custom error down below
-      mkdir -p -- "${OUTPUT_DIR}" || true
+      mkdir \
+        --parents \
+        -- "${OUTPUT_DIR}" || true
     fi
   else
     readonly OUTPUT_DIR="."
@@ -107,7 +114,7 @@ start_in_correct_mode() {
   # Create temporary directory to store OCSP response,
   # before having checked the certificate status therein
   local temp_output_dir
-  temp_output_dir="$(mktemp -d)"
+  temp_output_dir="$(mktemp --directory)"
   readonly temp_output_dir
 
   declare -A certs_processed
@@ -211,7 +218,7 @@ check_for_existing_ocsp_response() {
   # Note: A non-zero return code of either `date` command is not caught by
   # Strict Mode, but this isn't critical, since it essentially skips the date
   # check then and always fetches the OCSP response.
-  (( $(date -d "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )) || \
+  (( $(date --date "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )) || \
     return 1
 }
 
@@ -300,7 +307,7 @@ print_and_handle_result() {
 
   for cert_name in "${!certs_processed[@]}"; do
     if [[ "${certs_processed["${cert_name}"]}" == "fetched" ]]; then
-      if pgrep -fu "${EUID}" 'nginx: master process' >&3 2>&1; then
+      if pgrep --full --euid "${EUID}" 'nginx: master process' >&3 2>&1; then
         /usr/sbin/service nginx reload
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
       else
