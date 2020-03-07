@@ -14,18 +14,17 @@ exit_with_error() {
   exit 1
 }
 
-print_usage() {
-  echo \
-    "USAGE: ${0}"\
-    "[-c/--certbot-dir DIRECTORY]"\
-    "[-f/--force-fetch"\
-    "[-h/--help]"\
-    "[-n/--cert-name CERTNAME]"\
-    "[-o/--output-dir DIRECTORY]"\
-    "[-v/--verbose] [-v/--verbose]"
-}
-
 parse_cli_arguments() {
+  local -r usage=(
+    "USAGE: ${0}"
+    "[-c/--certbot-dir DIRECTORY]"
+    "[-f/--force-fetch"
+    "[-h/--help]"
+    "[-n/--cert-name CERTNAME]"
+    "[-o/--output-dir DIRECTORY]"
+    "[-v/--verbose] [-v/--verbose]"
+  )
+
   declare -gi VERBOSITY=0
 
   while [[ ${#} -gt 0 ]]; do
@@ -39,23 +38,21 @@ parse_cli_arguments() {
             --relative-base . \
             -- "${2}")"; shift 2
         else
-          # shellcheck disable=SC2046
-          exit_with_error $(print_usage)
+          exit_with_error "${usage[@]}"
         fi
         ;;
       -f|--force)
         FORCE_FETCH="true"; shift
         ;;
       -h|--help)
-        print_usage
+        echo >&2 "${usage[@]}"
         exit
         ;;
       -n|--cert-name)
         if [[ -n ${2:-} ]]; then
           declare -gr CERT_LINEAGE="${2}"; shift 2
         else
-          # shellcheck disable=SC2046
-          exit_with_error $(print_usage)
+          exit_with_error "${usage[@]}"
         fi
         ;;
       -o|--output-dir)
@@ -65,16 +62,14 @@ parse_cli_arguments() {
             --relative-base . \
             -- "${2}")"; shift 2
         else
-          # shellcheck disable=SC2046
-          exit_with_error $(print_usage)
+          exit_with_error "${usage[@]}"
         fi
         ;;
       -v|--verbose)
         VERBOSITY+=1; shift
         ;;
       *)
-        # shellcheck disable=SC2046
-        exit_with_error $(print_usage)
+        exit_with_error "${usage[@]}"
         ;;
     esac
   done
