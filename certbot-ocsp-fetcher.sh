@@ -302,7 +302,7 @@ print_and_handle_result() {
   done
   readonly certs_processed_formatted
   unset cert_name
-  local output="${header}${certs_processed_formatted}"
+  local output="${header}${certs_processed_formatted:-}"
 
   if [[ ${RELOAD_WEBSERVER:-} != "false" ]]; then
     reload_webserver
