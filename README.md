@@ -40,7 +40,7 @@ timer, or by adding it to the user's crontab. It can be run as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-fetch]
 [-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY]
-[-v/--verbose]`
+[-v/--verbose] [-w/--no-reload-webserver]`
 
 The filename of the OCSP staple is the name of the certificate lineage (as used
 by Certbot) with the DER extension. Be sure to point nginx to the staple(s) by
@@ -95,6 +95,10 @@ behavior (see below).
   Makes the tool verbose. This prints informational messages about operations
   performed on certificate lineages. This can be specified multiple times for
   more verbosity.
+
+- `-w/--no-reload-webserver`\
+  By default, this script tries to reload a service named `nginx` if at least
+  one OCSP response was fetched. This flag disables this behavior.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812

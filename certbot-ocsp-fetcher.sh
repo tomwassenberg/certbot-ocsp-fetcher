@@ -23,6 +23,7 @@ parse_cli_arguments() {
     "[-n/--cert-name CERTNAME]"
     "[-o/--output-dir DIRECTORY]"
     "[-v/--verbose] [-v/--verbose]"
+    "[-w/--no-reload-webserver]"
   )
 
   declare -gi VERBOSITY=0
@@ -67,6 +68,9 @@ parse_cli_arguments() {
         ;;
       -v|--verbose)
         VERBOSITY+=1; shift
+        ;;
+      -w|--no-reload-webserver)
+        declare -glr RELOAD_WEBSERVER="false"; shift
         ;;
       *)
         exit_with_error "${usage[@]}"
@@ -300,25 +304,32 @@ print_and_handle_result() {
   unset cert_name
   local output="${header}${certs_processed_formatted}"
 
-  for cert_name in "${!certs_processed[@]}"; do
-    if [[ "${certs_processed["${cert_name}"]}" == "fetched" ]]; then
-      if pgrep --full --euid "${EUID}" 'nginx: master process' >&3 2>&1; then
-        /usr/sbin/service nginx reload
-        local -r nginx_status=$'\n\n\t'"nginx reloaded"
-      else
-        local -r nginx_status=$'\n\n\t'"nginx not reloaded"$'\t'"unprivileged, reload manually"
-      fi
-      readonly output+="${nginx_status}"
-      break
-    fi
-  done
-  unset cert_name
+  if [[ ${RELOAD_WEBSERVER:-} != "false" ]]; then
+    reload_webserver
+  fi
 
   if (( "${VERBOSITY}" >= 1 )); then
     column -ents$'\t' <<< "${output}"
   fi
 
   [[ "${ERROR_ENCOUNTERED:-}" != "true" ]]
+}
+
+reload_webserver() {
+  for cert_name in "${!certs_processed[@]}"; do
+    if [[ "${certs_processed["${cert_name}"]}" == "fetched" ]]; then
+      if service nginx reload >&3 2>&1; then
+        local -r nginx_status=$'\n\n\t'"nginx reloaded"
+        break
+      else
+        ERROR_ENCOUNTERED="true"
+        local -r nginx_status=$'\n\n\t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
+        break
+      fi
+    fi
+  done
+  unset cert_name
+  readonly output+="${nginx_status:-}"
 }
 
 main() {
