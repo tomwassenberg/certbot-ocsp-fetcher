@@ -284,16 +284,19 @@ fetch_ocsp_response() {
     -issuer "${cert_dir}/chain.pem" \
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
-    -respout "${temp_output_dir}/${cert_name}.der" 2>&-)"
+    -respout "${temp_output_dir}/${cert_name}.der" 2>&3)"
   local -r ocsp_call_rc=${?}
   set -e
-  readonly ocsp_call_output
-  local cert_status="${ocsp_call_output%%$'\n'*}"
-  readonly cert_status="${cert_status#${cert_dir}/cert.pem: }"
+  readonly ocsp_call_output="${ocsp_call_output#${cert_dir}/cert.pem: }"
+  local -r cert_status="${ocsp_call_output%%$'\n'*}"
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED="true"
-    certs_processed["${cert_name}"]="unfetched"$'\t'"${ocsp_call_output//[[:space:]]/ }"
+    if (( "${VERBOSITY}" >= 2 )); then
+      certs_processed["${cert_name}"]="unfetched"$'\t'"${ocsp_call_output//[[:space:]]/ }"
+    else
+      certs_processed["${cert_name}"]="unfetched"$'\t'"${cert_status}"
+    fi
     return
   fi
 
