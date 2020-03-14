@@ -314,7 +314,14 @@ print_and_handle_result() {
   fi
 
   if (( "${VERBOSITY}" >= 1 )); then
-    column -ents$'\t' <<< "${output}"
+    if command -v column >&-; then
+      column -ents$'\t' <<< "${output}"
+    else
+      echo >&2 \
+        "Install BSD \"column\" for properly formatted output. On Ubuntu," \
+        "this can be done by installing the \"bsdmainutils\" package."$'\n'
+      echo "${output}"
+    fi
   fi
 
   [[ "${ERROR_ENCOUNTERED:-}" != "true" ]]

@@ -27,7 +27,6 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 
 ## Dependencies
 - Bash 4.3+
-- BSD column (included in stock Ubuntu within the `util-linux` package)
 - Certbot 0.5.0+
 - nginx (tested with 1.14.0)
 - OpenSSL (1.1.0+)
