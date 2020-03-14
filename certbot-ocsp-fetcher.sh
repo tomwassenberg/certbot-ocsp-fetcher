@@ -197,36 +197,39 @@ check_for_existing_ocsp_response() {
   [[ -f ${OUTPUT_DIR}/${cert_name}.der ]] || return 1
 
   # Inspect the existing local OCSP response, and parse its expiry date
-  local ocsp_response_next_update
+  local existing_ocsp_response
   set +e
-  ocsp_response_next_update="$(openssl ocsp \
+  existing_ocsp_response="$(openssl ocsp \
     -no_nonce \
     -issuer "${cert_dir}/chain.pem" \
     -cert "${cert_dir}/cert.pem" \
     -verify_other "${cert_dir}/chain.pem" \
     -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&3)"
-  local -r ocsp_response_next_update_rc=${?}
+  local -r existing_ocsp_response_rc=${?}
   set -e
-  readonly ocsp_response_next_update
+  readonly existing_ocsp_response
 
 
-  local -r expiry_regex='^\s*Next Update: (.+)$'
-  if [[ "${ocsp_response_next_update_rc}" != 0 || ! ${ocsp_response_next_update##*$'\n'} =~ ${expiry_regex} ]]; then
-    echo >&2 \
-      "Error encountered in parsing previously existing OCSP response," \
-      "located at ${OUTPUT_DIR}/${cert_name}.der. Planning to request new" \
-      "OCSP response."
-    return 1
-  else
-    local -r expiry_date="${BASH_REMATCH[1]}"
-  fi
+  [[ "${existing_ocsp_response_rc}" == 0 ]] || return 1
+
+  for existing_ocsp_response_line in ${existing_ocsp_response}; do
+    if [[ ${existing_ocsp_response_line} =~ "This Update: "(.+) ]]; then
+      local -r this_update="${BASH_REMATCH[1]}"
+    elif [[ ${existing_ocsp_response_line} =~ "Next Update: "(.+) ]]; then
+      local -r next_update="${BASH_REMATCH[1]}"
+    fi
+  done
+  [[ -n "${this_update:-}" && -n "${next_update:-}" ]] || return 1
 
   # Only continue fetching OCSP response if existing response expires within
-  # two days.
-  # Note: A non-zero return code of either `date` command is not caught by
+  # half of its lifetime.
+  # Note: A non-zero return code of one of the `date` calls is not caught by
   # Strict Mode, but this isn't critical, since it essentially skips the date
   # check then and always fetches the OCSP response.
-  (( $(date --date "${expiry_date}" +%s) > ($(date +%s) + 2*24*60*60) )) || \
+  local -ri response_lifetime_in_seconds=$(( \
+    $(date +%s --date "${next_update}") - $(date +%s --date "${this_update}") ))
+  (( $(date +%s) < \
+    $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2 )) || \
     return 1
 }
 
