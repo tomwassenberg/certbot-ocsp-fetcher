@@ -241,7 +241,8 @@ fetch_ocsp_response() {
     --standalone)
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
-      if [[ ${FORCE_FETCH:-} != "true" ]] && check_for_existing_ocsp_response; then
+      if [[ ${FORCE_FETCH:-} != "true" ]] && \
+        check_for_existing_ocsp_response; then
         certs_processed["${cert_name}"]="unfetched"$'\t'"valid response on disk"
         return
       fi
@@ -268,7 +269,11 @@ fetch_ocsp_response() {
   fi
 
   local ocsp_endpoint
-  ocsp_endpoint="$(openssl x509 -noout -ocsp_uri -in "${cert_dir}/cert.pem" 2>&3)"
+  ocsp_endpoint="$(openssl x509 \
+    -noout \
+    -ocsp_uri \
+    -in "${cert_dir}/cert.pem" \
+    2>&3)"
   readonly ocsp_endpoint
   local ocsp_host="${ocsp_endpoint##*://}"
   readonly ocsp_host="${ocsp_host%%/*}"
