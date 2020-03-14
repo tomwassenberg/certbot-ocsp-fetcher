@@ -38,7 +38,7 @@ You should run it daily, for instance by using the included systemd service +
 timer, or by adding it to the user's crontab. It can be run as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-fetch]
-[-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY]
+[-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY] [-q/--quiet]
 [-v/--verbose] [-w/--no-reload-webserver]`
 
 The filename of the OCSP staple is the name of the certificate lineage (as used
@@ -90,10 +90,13 @@ behavior (see below).
   Specify the directory where OCSP staple files are saved. When not passed, this
   defaults to the working directory.
 
+- `-q, --quiet`\
+  Do not print any output, including the list of processed certificates and the
+  actions taken.
+
 - `-v, --verbose`\
-  Makes the tool verbose. This prints informational messages about operations
-  performed on certificate lineages. This can be specified multiple times for
-  more verbosity.
+  Makes the tool verbose. This prints specific messages which can be used for
+  debugging purposes. This can be specified multiple times for more verbosity.
 
 - `-w/--no-reload-webserver`\
   By default, this script tries to reload a service named `nginx` if at least

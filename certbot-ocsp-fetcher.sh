@@ -22,11 +22,12 @@ parse_cli_arguments() {
     "[-h/--help]"
     "[-n/--cert-name CERTNAME]"
     "[-o/--output-dir DIRECTORY]"
-    "[-v/--verbose] [-v/--verbose]"
+    "[-q/--quiet]"
+    "[-v/--verbose]"
     "[-w/--no-reload-webserver]"
   )
 
-  declare -gi VERBOSITY=0
+  declare -gi VERBOSITY=1
 
   while [[ ${#} -gt 0 ]]; do
     local parameter="${1}"
@@ -65,6 +66,9 @@ parse_cli_arguments() {
         else
           exit_with_error "${usage[@]}"
         fi
+        ;;
+      -q|--quiet)
+        VERBOSITY=0
         ;;
       -v|--verbose)
         VERBOSITY+=1; shift
