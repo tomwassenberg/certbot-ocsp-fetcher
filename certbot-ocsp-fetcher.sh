@@ -135,14 +135,19 @@ run_standalone() {
 
   if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
     exit_with_error \
-      "error:"$'\t\t'"can't access Certbot directory"
+      "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live"
   fi
 
   # Check specific lineage if passed on CLI,
   # or otherwise all lineages in Certbot's dir
   if [[ -n "${CERT_LINEAGE:-}" ]]; then
-    fetch_ocsp_response \
-      "--standalone" "${CERT_LINEAGE}" "${temp_output_dir}"
+    if [[ -r "${CERTBOT_DIR}/live/${CERT_LINEAGE}" ]]; then
+      fetch_ocsp_response \
+        "--standalone" "${CERT_LINEAGE}" "${temp_output_dir}"
+    else
+      exit_with_error \
+      "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${CERT_LINEAGE}"
+    fi
   else
     set +f; shopt -s nullglob
     for cert_name in "${CERTBOT_DIR}"/live/*
