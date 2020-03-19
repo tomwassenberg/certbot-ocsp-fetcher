@@ -1,8 +1,8 @@
 # certbot-ocsp-fetcher
 `certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. It fetches and
-verifies OCSP responses for TLS certificates issued with [Certbot], to be used
-by nginx. This primes the OCSP cache of nginx, which is needed because of
-nginx's flawed implementation (see bug [#812]).
+saves OCSP responses for TLS certificates issued with [Certbot], to be used by
+nginx. This primes the OCSP cache of nginx, which is needed because of nginx's
+flawed implementation (see bug [#812]).
 
 In order for all this to be useful, you should know how to correctly set up
 OCSP stapling in nginx, for which you can take a look at
@@ -15,12 +15,13 @@ and saving the OCSP responses in staple files that can be referenced in the
 nginx configurations of the websites that use the certificates. The script can
 behave in two ways:
 
-  - When this script is called by Certbot as a deploy/renew hook, only the OCSP
-    response for the specific certificate that is issued, is fetched.
+  - When this script is invoked by Certbot as a deploy/renew hook, it ensures
+    an up-to-date OCSP staple file is present on disk for the specific
+    certificate that was issued using Certbot.
 
-  - When Certbot's variables are not passed, the script cycles through all sites
-    that have a certificate lineage in Certbot's folder, and fetches an OCSP
-    response.
+  - When not invoked by Certbot, the script cycles through all sites
+    that have a certificate lineage in Certbot's folder, and ensures an
+    up-to-date OCSP staple file is present on disk.
 
 The use of this script makes sure OCSP stapling in nginx works reliably, which
 makes e.g. the adoption of [OCSP Must-Staple] possible.
@@ -37,7 +38,7 @@ that Certbot stores its certificates in (by default `/etc/letsencrypt/live`).
 You should run it daily, for instance by using the included systemd service +
 timer, or by adding it to the user's crontab. It can be run as follows:
 
-`# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-fetch]
+`# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-update]
 [-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY] [-q/--quiet]
 [-v/--verbose] [-w/--no-reload-webserver]`
 
@@ -56,10 +57,10 @@ Certbot command instead. The difference between `--deploy-hook` and
 a certificate lineage, but only during its renewals. Be aware that in Certbot
 <0.10.0, hooks were [not saved] in the renewal configuration of a certificate.
 
-**Note:** If there is an OCSP staple with the target name already existing in
-the output directory which doesn't expire within two days, a new OCSP response
-will **not** be fetched. Use the `-f/--force-fetch` flag to override this
-behavior (see below).
+**Note:** If an OCSP staple file with the target name already exists in the
+output directory with a response that doesn't expire within half of its
+lifetime, the existing OCSP staple file will **not** be updated. Use the
+`-f/--force-update` flag to override this behavior (see below).
 
 ### CLI parameters
 - `-c, --certbot-dir`\
@@ -70,9 +71,9 @@ behavior (see below).
   Certbot. In that case, the path to Certbot and the certificate is inferred from
   the call that Certbot makes.
 
-- `-f, --force-fetch`\
-  Ignore possibly existing valid OCSP responses on disk, and always fetch new
-  responses from the OCSP responder.\
+- `-f, --force-update`\
+  Replace possibly existing valid OCSP responses in staple files on disk by
+  fresh responses from the OCSP responder.\
   This flag cannot be used when the script is invoked as a deploy hook by
   Certbot.
 
@@ -81,8 +82,8 @@ behavior (see below).
 
 - `-n, --cert-name`\
   Specify the name of the certificate lineage (as used by Certbot) that you
-  want to fetch an OCSP response for. When not specified, all certificate
-  lineages in Certbot's configuration directory will be processed.\
+  want to process. When not specified, all certificate lineages in Certbot's
+  configuration directory will be processed.\
   This flag cannot be used when the script is invoked as a deploy hook by
   Certbot.
 
@@ -100,7 +101,8 @@ behavior (see below).
 
 - `-w/--no-reload-webserver`\
   By default, this script tries to reload a service named `nginx` if at least
-  one OCSP response was fetched. This flag disables this behavior.
+  one OCSP staple file was created or updated. This flag disables this
+  behavior.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812

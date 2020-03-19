@@ -18,7 +18,7 @@ parse_cli_arguments() {
   local -r usage=(
     "USAGE: ${0}"
     "[-c/--certbot-dir DIRECTORY]"
-    "[-f/--force-fetch]"
+    "[-f/--force-update]"
     "[-h/--help]"
     "[-n/--cert-name CERTNAME]"
     "[-o/--output-dir DIRECTORY]"
@@ -44,7 +44,7 @@ parse_cli_arguments() {
         fi
         ;;
       -f|--force)
-        FORCE_FETCH="true"; shift
+        FORCE_UPDATE="true"; shift
         ;;
       -h|--help)
         echo >&2 "${usage[@]}"
@@ -114,8 +114,8 @@ prepare_output_dir() {
 }
 
 start_in_correct_mode() {
-  # Create temporary directory to store OCSP response,
-  # before having checked the certificate status therein
+  # Create temporary directory to store OCSP staple file,
+  # before having checked the certificate status in the response
   local temp_output_dir
   temp_output_dir="$(mktemp --directory)"
   readonly temp_output_dir
@@ -174,11 +174,11 @@ run_as_deploy_hook() {
       "error:"$'\t\t'"-c/--certbot-dir cannot be passed when run as Certbot hook"
   fi
 
-  if [[ -n ${FORCE_FETCH:-} ]]; then
+  if [[ -n ${FORCE_UPDATE:-} ]]; then
     # When run as deploy hook the behavior of this flag is used by default.
     # Therefore passing this flag would not have any effect.
     exit_with_error \
-      "error:"$'\t\t'"-f/--force-fetch cannot be passed when run as Certbot hook"
+      "error:"$'\t\t'"-f/--force-update cannot be passed when run as Certbot hook"
   fi
 
   if [[ -n ${CERT_LINEAGE:-} ]]; then
@@ -193,10 +193,10 @@ run_as_deploy_hook() {
 }
 
 # Check if it's necessary to fetch a new OCSP response
-check_for_existing_ocsp_response() {
+check_for_existing_ocsp_staple_file() {
   [[ -f ${OUTPUT_DIR}/${cert_name}.der ]] || return 1
 
-  # Inspect the existing local OCSP response, and parse its expiry date
+  # Validate and verify the existing local OCSP staple file
   local existing_ocsp_response
   set +e
   existing_ocsp_response="$(openssl ocsp \
@@ -244,9 +244,9 @@ fetch_ocsp_response() {
     --standalone)
       local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
 
-      if [[ ${FORCE_FETCH:-} != "true" ]] && \
-        check_for_existing_ocsp_response; then
-        certs_processed["${cert_name}"]="unfetched"$'\t'"valid response on disk"
+      if [[ ${FORCE_UPDATE:-} != "true" ]] && \
+        check_for_existing_ocsp_staple_file; then
+        certs_processed["${cert_name}"]="not updated"$'\t'"valid staple file on disk"
         return
       fi
       ;;
@@ -267,7 +267,7 @@ fetch_ocsp_response() {
     -noout >&3 2>&1; then
 
     ERROR_ENCOUNTERED="true"
-    certs_processed["${cert_name}"]="unfetched"$'\t'"leaf certificate expired"
+    certs_processed["${cert_name}"]="not updated"$'\t'"leaf certificate expired"
     return
   fi
 
@@ -301,21 +301,22 @@ fetch_ocsp_response() {
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED="true"
     if (( "${VERBOSITY}" >= 2 )); then
-      certs_processed["${cert_name}"]="unfetched"$'\t'"${ocsp_call_output//[[:space:]]/ }"
+      certs_processed["${cert_name}"]="not updated"$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
-      certs_processed["${cert_name}"]="unfetched"$'\t'"${cert_status}"
+      certs_processed["${cert_name}"]="not updated"$'\t'"${cert_status}"
     fi
     return
   fi
 
-  # If arrived here status was good, so move OCSP response to definitive folder
+  # If arrived here status was good, so move OCSP staple file to definitive
+  # folder
   mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
 
-  certs_processed["${cert_name}"]="fetched"
+  certs_processed["${cert_name}"]="updated"
 }
 
 print_and_handle_result() {
-  local header="LINEAGE"$'\t'"FETCH RESULT"$'\t'"REASON"
+  local header="LINEAGE"$'\t'"RESULT"$'\t'"REASON"
 
   for cert_name in "${!certs_processed[@]}"; do
     local certs_processed_formatted+=$'\n'"${cert_name}"$'\t'"${certs_processed["${cert_name}"]}"
@@ -344,7 +345,7 @@ print_and_handle_result() {
 
 reload_webserver() {
   for cert_name in "${!certs_processed[@]}"; do
-    if [[ "${certs_processed["${cert_name}"]}" == "fetched" ]]; then
+    if [[ "${certs_processed["${cert_name}"]}" == "updated" ]]; then
       if service nginx reload >&3 2>&1; then
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
         break
