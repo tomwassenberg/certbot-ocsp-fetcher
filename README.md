@@ -1,30 +1,31 @@
 # certbot-ocsp-fetcher
-`certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. It fetches and
-saves OCSP responses for TLS certificates issued with [Certbot], to be used by
-nginx. This primes the OCSP cache of nginx, which is needed because of nginx's
-flawed implementation (see bug [#812]).
+`certbot-ocsp-fetcher` helps you setup OCSP stapling in nginx. The tool primes
+nginx's OCSP cache to work around nginx's flawed OCSP stapling implementation
+(see bug [#812]). The tool does this by fetching and saving OCSP responses for
+TLS certificates issued with [Certbot].
 
-In order for all this to be useful, you should know how to correctly set up
-OCSP stapling in nginx, for which you can take a look at
-[Mozilla's SSL Configuration Generator] for instance. If you use Certbot's
-`nginx` plugin, you can also add the `--staple-ocsp` flag to your
-`certbot --nginx` command(s) to configure OCSP stapling.
+In order for all this to be useful, you should know how to set up OCSP stapling
+in nginx. For this, you can take a look at [Mozilla's SSL Configuration
+Generator] for instance. If you use Certbot's `nginx` plugin, you can also add
+the `--staple-ocsp` flag to your `certbot --nginx` command(s) to configure OCSP
+stapling.
 
-The script works by utilizing the OCSP Responder URL embedded in a certificate,
-and saving the OCSP responses in staple files that can be referenced in the
-nginx configurations of the websites that use the certificates. The script can
-behave in two ways:
+The tool works by utilizing the OCSP Responder URL embedded in a certificate
+and saving the OCSP responses in staple files. These staple files can be
+referenced in the nginx configurations of the websites that use the
+certificates. The tool can behave in two ways:
 
-  - When this script is invoked by Certbot as a deploy/renew hook, it ensures
-    an up-to-date OCSP staple file is present on disk for the specific
-    certificate that was issued using Certbot.
+- Certbot can invoke the tool as a deploy/renew hook (possible in Certbot
+  >=0.17.0). In this case, the tool ensures an up-to-date OCSP staple file
+  is present on disk for the specific certificate that was issued using
+  Certbot.
 
-  - When not invoked by Certbot, the script cycles through all sites
-    that have a certificate lineage in Certbot's folder, and ensures an
-    up-to-date OCSP staple file is present on disk.
+- You can invoke the tool directly. In this case, the tool cycles through all
+  sites that have a certificate lineage in Certbot's folder and ensures an
+  up-to-date OCSP staple file is present on disk.
 
-The use of this script makes sure OCSP stapling in nginx works reliably, which
-makes e.g. the adoption of [OCSP Must-Staple] possible.
+The use of this tool makes sure OCSP stapling in nginx works reliably. As a
+consequence, this allows you to use [OCSP Must-Staple].
 
 ## Dependencies
 - Bash 4.3+
@@ -33,81 +34,78 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 - OpenSSL 1.1.0+
 
 ## Usage
-The script should be run with privileges that allow it to access the directory
-that Certbot stores its certificates in (by default `/etc/letsencrypt/live`).
-You should run it daily, for instance by using the included systemd service +
-timer, or by adding it to the user's crontab. It can be run as follows:
+Invoke the tool as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-update]
 [-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY] [-q/--quiet]
 [-v/--verbose] [-w/--no-reload-webserver]`
 
-The filename of the OCSP staple is the name of the certificate lineage (as used
-by Certbot) with the DER extension. Be sure to point nginx to the staple(s) by
-using the `ssl_stapling_file` directive in the nginx configuration of the
-website, so e.g. `ssl_stapling_file /etc/nginx/ocsp-cache/example.com.der;`.
+The filename of a resulting OCSP staple is the name of the certificate lineage
+(as used by Certbot) with the `der` extension appended. Be sure to point nginx
+to the staple file(s) by using the `ssl_stapling_file` directive in the nginx
+configuration of the website. For instance, by including: `ssl_stapling_file
+/etc/nginx/ocsp-cache/example.com.der;`.
 
-When you want to use this tool as a deploy hook (available in Certbot >=0.17.0),
-append `--deploy-hook "/path/to/certbot-ocsp-fetcher.sh"` to the Certbot command
-you would normally use when requesting a certificate.
+Invoke the tool with privileges that allow it to access the directory that
+Certbot stores its certificates in (by default `/etc/letsencrypt/live`). You
+should run the tool daily, for instance by one of the following options:
 
-When you can't use Certbot >=0.17.0, use the `--renew-hook` flag in your
-Certbot command instead. The difference between `--deploy-hook` and
-`--renew-hook` is that a renew hook is not invoked during the first issuance in
-a certificate lineage, but only during its renewals. Be aware that in Certbot
-<0.10.0, hooks were [not saved] in the renewal configuration of a certificate.
+- using the included systemd service + timer
+- adding an entry for the tool to the user's crontab
 
-**Note:** If an OCSP staple file with the target name already exists in the
-output directory with a response that doesn't expire within half of its
-lifetime, the existing OCSP staple file will **not** be updated. Use the
-`-f/--force-update` flag to override this behavior (see below).
+As mentioned above, you can use this tool as a deploy hook for Certbot. To do
+this, append `--deploy-hook "/path/to/certbot-ocsp-fetcher.sh"` to the Certbot
+command you currently use when requesting a certificate.
 
-### CLI parameters
+**Note:** If an existing OCSP staple file is still valid for more than half of
+its lifetime, it will **not** be updated. If you need to override this
+behavior, use the`-f/--force-update` flag (see below).
+
+### Command line arguments
+This is a listing of all the command line arguments that can be passed to the
+tool:
+
 - `-c, --certbot-dir`\
-  Specify the configuration directory of the Certbot instance, that is used to
-  process the certificates. When not passed, this defaults to
+  Specify the configuration directory of the Certbot instance that is used to
+  process the certificates. When not specified, this defaults to
   `/etc/letsencrypt`.\
-  This flag cannot be used when the script is invoked as a deploy hook by
-  Certbot. In that case, the path to Certbot and the certificate is inferred from
-  the call that Certbot makes.
+  This flag cannot be used when the tool is invoked as a deploy hook by
+  Certbot. In that case, the tool infers the path to Certbot's configuration
+  directory and the certificate from Certbot's invocation of the tool.
 
 - `-f, --force-update`\
   Replace possibly existing valid OCSP responses in staple files on disk by
   fresh responses from the OCSP responder.\
-  This flag cannot be used when the script is invoked as a deploy hook by
-  Certbot.
+  This flag cannot be used when Certbot invokes the tool as a deploy hook.
 
 - `-h, --help`\
-  Print the correct usage of the script.
+  Print the correct usage of the tool.
 
 - `-n, --cert-name`\
   Specify the name of the certificate lineage (as used by Certbot) that you
-  want to process. When not specified, all certificate lineages in Certbot's
-  configuration directory will be processed.\
-  This flag cannot be used when the script is invoked as a deploy hook by
+  want to process. When not specified, the tool processes all certificate
+  lineages in Certbot's configuration directory.\
+  This flag cannot be used when the tool is invoked as a deploy hook by
   Certbot.
 
 - `-o, --output-dir`\
-  Specify the directory where OCSP staple files are saved. When not passed, this
-  defaults to the working directory.
+  Specify the directory where OCSP staple files are saved. When not specified,
+  this defaults to the working directory.
 
 - `-q, --quiet`\
-  Do not print any output, including the list of processed certificates and the
-  actions taken.
+  Do not print any output, including the list of certificates the tool
+  processed and the actions the tool took.
 
 - `-v, --verbose`\
-  Makes the tool verbose. This prints specific messages which can be used for
-  debugging purposes. This can be specified multiple times for more verbosity.
+  Makes the tool verbose by printing specific (error) messages. These messages
+  can be used for debugging purposes. Specify this flag multiple times for more
+  verbosity.
 
 - `-w/--no-reload-webserver`\
-  By default, this script tries to reload a service named `nginx` if at least
-  one OCSP staple file was created or updated. This flag disables this
-  behavior.
+  Do not reload `nginx`. When not specified and the tool created or updated at
+  least one OCSP staple file, the tool will attempt to reload `nginx`.
 
  [Certbot]: https://github.com/certbot/certbot
  [#812]: https://trac.nginx.org/nginx/ticket/812
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
- [ocsp_host]: https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/e080b9838c1ee2f1cf05c6e9f366c19f986dc128/certbot-ocsp-fetcher.sh#L183
- [openssl-syntax-issue]: https://github.com/tomwassenberg/certbot-ocsp-fetcher/issues/16
- [not saved]: https://github.com/certbot/certbot/issues/3394
