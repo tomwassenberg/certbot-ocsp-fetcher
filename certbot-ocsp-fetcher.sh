@@ -43,7 +43,7 @@ parse_cli_arguments() {
           exit_with_error "${usage[@]}"
         fi
         ;;
-      -f|--force)
+      -f|--force-update)
         FORCE_UPDATE="true"; shift
         ;;
       -h|--help)
