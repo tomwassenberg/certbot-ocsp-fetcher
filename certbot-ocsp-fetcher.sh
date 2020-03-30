@@ -321,8 +321,9 @@ print_and_handle_result() {
   for cert_name in "${!certs_processed[@]}"; do
     local certs_processed_formatted+=$'\n'"${cert_name}"$'\t'"${certs_processed["${cert_name}"]}"
   done
-  readonly certs_processed_formatted
   unset cert_name
+  certs_processed_formatted="$(sort <<< "${certs_processed_formatted:-}")"
+  readonly certs_processed_formatted
   local output="${header}${certs_processed_formatted:-}"
 
   if [[ ${RELOAD_WEBSERVER:-} != "false" ]]; then
