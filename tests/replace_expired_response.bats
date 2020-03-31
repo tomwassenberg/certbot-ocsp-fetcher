@@ -3,12 +3,12 @@
 load _test_helper
 
 @test "replace existing expired OCSP response" {
-  cp tests/examples/expired_response.der "${OUTPUT_DIR}/valid.der"
+  cp "${CERTS_DIR}/ocsp_response_expired.der" "${OUTPUT_DIR}/valid.der"
   PREV_RESPONSE_CHECKSUM="$(sha256sum "${OUTPUT_DIR}/valid.der")"
 
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
-    --certbot-dir "${BATS_TEST_DIRNAME}/examples" \
+    --certbot-dir "${CERTS_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
     --cert-name valid
 

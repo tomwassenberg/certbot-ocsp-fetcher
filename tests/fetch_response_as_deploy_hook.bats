@@ -4,7 +4,7 @@ load _test_helper
 
 @test "fetch OCSP response as a deploy hook for Certbot" {
   RENEWED_DOMAINS=foo \
-    RENEWED_LINEAGE="${BATS_TEST_DIRNAME}/examples/live/valid" \
+    RENEWED_LINEAGE="${CERTS_DIR}/live/valid" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
       --no-reload-webserver \
       --output-dir "${OUTPUT_DIR}"

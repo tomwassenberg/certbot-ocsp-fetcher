@@ -5,7 +5,7 @@ load _test_helper
 @test "replace existing OCSP response when forced" {
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
-    --certbot-dir "${BATS_TEST_DIRNAME}/examples" \
+    --certbot-dir "${CERTS_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
     --cert-name valid
 
@@ -14,7 +14,7 @@ load _test_helper
 
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
-    --certbot-dir "${BATS_TEST_DIRNAME}/examples" \
+    --certbot-dir "${CERTS_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
     --cert-name valid \
     --force-update

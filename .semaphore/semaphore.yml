@@ -1,0 +1,47 @@
+version: "v1.0"
+name: "certbot-ocsp-fetcher"
+agent:
+  machine:
+    type: "e1-standard-2"
+    os_image: "ubuntu1804"
+
+global_job_config:
+  prologue:
+    commands:
+      - "checkout --use-cache"
+
+blocks:
+  - name: "ShellCheck"
+    task:
+      jobs:
+        - name: "Install and run ShellCheck"
+          commands:
+            - "tar
+                --extract
+                --directory \"${TMPDIR:-/tmp}\"
+                --strip-components 1
+                --xz
+                --file
+                <(curl
+                  --fail
+                  --location
+                  --silent
+                  --show-error
+                  https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz)
+                shellcheck-stable/shellcheck"
+            - "sudo install --owner root --group root \"${TMPDIR:-/tmp}/shellcheck\" /usr/local/bin/"
+
+            - "shellcheck --enable all ./*.sh"
+            - "shellcheck --enable all --exclude 2154 tests/*.{bash,bats}"
+
+  - name: "Bats"
+    task:
+      secrets:
+        - name: "certs_letsencrypt_chain"
+        - name: "certs_valid+expired+revoked"
+        - name: "ocsp_response_expired"
+      jobs:
+        - name: "Install Bats and run tests"
+          commands:
+            - "sudo apt install bats"
+            - "bats ./tests"
