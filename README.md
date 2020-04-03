@@ -30,7 +30,7 @@ makes e.g. the adoption of [OCSP Must-Staple] possible.
 - Bash 4.3+
 - Certbot 0.5.0+
 - nginx (tested with 1.14.0)
-- OpenSSL (1.1.0+)
+- OpenSSL 1.1.0+
 
 ## Usage
 The script should be run with privileges that allow it to access the directory
