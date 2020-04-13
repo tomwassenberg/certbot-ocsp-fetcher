@@ -3,6 +3,8 @@
 load _test_helper
 
 @test "fetch OCSP response as a deploy hook for Certbot" {
+  fetch_sample_certs valid
+
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTS_DIR}/live/valid" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \

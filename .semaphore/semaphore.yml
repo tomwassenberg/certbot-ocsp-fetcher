@@ -38,10 +38,6 @@ blocks:
 
   - name: "Bats"
     task:
-      secrets:
-        - name: "certs_letsencrypt_chain"
-        - name: "certs_valid+expired+revoked"
-        - name: "ocsp_response_expired"
       jobs:
         - name: "Install Bats and run tests"
           commands:

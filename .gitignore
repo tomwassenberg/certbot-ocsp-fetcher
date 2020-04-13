@@ -4,3 +4,4 @@
 *.crt
 *.key
 *.der
+!tests/examples/ocsp_response_expired.der

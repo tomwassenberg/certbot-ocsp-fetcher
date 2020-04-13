@@ -3,6 +3,8 @@
 load _test_helper
 
 @test "fail when fetching OCSP response for expired certificate" {
+  fetch_sample_certs expired
+
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
     --certbot-dir "${CERTS_DIR}" \

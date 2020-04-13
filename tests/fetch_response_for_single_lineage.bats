@@ -3,6 +3,8 @@
 load _test_helper
 
 @test "fetch OCSP response for a single valid certificate lineage" {
+  fetch_sample_certs valid
+
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
     --certbot-dir "${CERTS_DIR}" \
