@@ -44,7 +44,8 @@ The filename of a resulting OCSP staple is the name of the certificate lineage
 (as used by Certbot) with the `der` extension appended. Be sure to point nginx
 to the staple file(s) by using the `ssl_stapling_file` directive in the nginx
 configuration of the website. For instance, by including: `ssl_stapling_file
-/etc/nginx/ocsp-cache/example.com.der;`.
+/etc/nginx/ocsp-cache/example.com.der;`, where `/etc/nginx/ocsp-cache` is the
+output directory that can be specified using `-o/--output-dir`.
 
 Invoke the tool with privileges that allow it to access the directory that
 Certbot stores its certificates in (by default `/etc/letsencrypt/live`). You
