@@ -2,7 +2,7 @@
 
 load _test_helper
 
-@test "do not replace existing OCSP response when not forced" {
+@test "do not replace fresh OCSP response when not forced" {
   fetch_sample_certs valid
 
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
