@@ -7,7 +7,7 @@ load _test_helper
 
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
-    --certbot-dir "${CERTS_DIR}" \
+    --certbot-dir "${CERTBOT_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
     --cert-name "revoked"
 

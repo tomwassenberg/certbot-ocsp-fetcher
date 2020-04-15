@@ -120,7 +120,7 @@ start_in_correct_mode() {
   temp_output_dir="$(mktemp --directory)"
   readonly temp_output_dir
 
-  declare -A certs_processed
+  declare -A lineages_processed
 
   # These two environment variables are set if this script is invoked by Certbot
   if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
@@ -154,31 +154,33 @@ run_standalone() {
     fi
   else
     set +f; shopt -s nullglob
-    for cert_name in "${CERTBOT_DIR}"/live/*
+    for lineage_dir in "${CERTBOT_DIR}"/live/*
     do
       fetch_ocsp_response \
-        "--standalone" "${cert_name##*/}" "${temp_output_dir}"
+        "--standalone" "${lineage_dir##*/}" "${temp_output_dir}"
     done
-    unset cert_name
+    unset lineage_dir
     set -f
   fi
 }
 
-# Run in deploy-hook mode, only checking the passed certificate
+# Run in deploy-hook mode, only processing the passed lineage
 # $1 - Path to temporary output directory
 run_as_deploy_hook() {
   if [[ -n ${CERTBOT_DIR:-} ]]; then
     # The directory is already inferred from the environment variable that
     # Certbot passes
     exit_with_error \
-      "error:"$'\t\t'"-c/--certbot-dir cannot be passed when run as Certbot hook"
+      "error:"$'\t\t'"-c/--certbot-dir cannot be passed" \
+      "when run as Certbot hook"
   fi
 
   if [[ -n ${FORCE_UPDATE:-} ]]; then
     # When run as deploy hook the behavior of this flag is used by default.
     # Therefore passing this flag would not have any effect.
     exit_with_error \
-      "error:"$'\t\t'"-f/--force-update cannot be passed when run as Certbot hook"
+      "error:"$'\t\t'"-f/--force-update cannot be passed" \
+      "when run as Certbot hook"
   fi
 
   if [[ -n ${CERT_LINEAGE:-} ]]; then
@@ -194,17 +196,17 @@ run_as_deploy_hook() {
 
 # Check if it's necessary to fetch a new OCSP response
 check_for_existing_ocsp_staple_file() {
-  [[ -f ${OUTPUT_DIR}/${cert_name}.der ]] || return 1
+  [[ -f ${OUTPUT_DIR}/${lineage_name}.der ]] || return 1
 
   # Validate and verify the existing local OCSP staple file
   local existing_ocsp_response
   set +e
   existing_ocsp_response="$(openssl ocsp \
     -no_nonce \
-    -issuer "${cert_dir}/chain.pem" \
-    -cert "${cert_dir}/cert.pem" \
-    -verify_other "${cert_dir}/chain.pem" \
-    -respin "${OUTPUT_DIR}/${cert_name}.der" 2>&3)"
+    -issuer "${lineage_dir}/chain.pem" \
+    -cert "${lineage_dir}/cert.pem" \
+    -verify_other "${lineage_dir}/chain.pem" \
+    -respin "${OUTPUT_DIR}/${lineage_name}.der" 2>&3)"
   local -r existing_ocsp_response_rc=${?}
   set -e
   readonly existing_ocsp_response
@@ -229,8 +231,8 @@ check_for_existing_ocsp_staple_file() {
   local -ri response_lifetime_in_seconds=$(( \
     $(date +%s --date "${next_update}") - $(date +%s --date "${this_update}") ))
   (( $(date +%s) < \
-    $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2 )) || \
-    return 1
+    $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2 )) \
+    || return 1
 }
 
 # Generate file used by ssl_stapling_file in nginx config of websites
@@ -238,20 +240,20 @@ check_for_existing_ocsp_staple_file() {
 # $2 - Name of certificate lineage
 # $3 - Path to temporary output directory
 fetch_ocsp_response() {
-  local -r cert_name="${2}";
+  local -r lineage_name="${2}";
   local -r temp_output_dir="${3}"
   case ${1} in
     --standalone)
-      local -r cert_dir="${CERTBOT_DIR}/live/${cert_name}"
+      local -r lineage_dir="${CERTBOT_DIR}/live/${lineage_name}"
 
       if [[ ${FORCE_UPDATE:-} != "true" ]] && \
         check_for_existing_ocsp_staple_file; then
-        certs_processed["${cert_name}"]="not updated"$'\t'"valid staple file on disk"
+        lineages_processed["${lineage_name}"]="not updated"$'\t'"valid staple file on disk"
         return
       fi
       ;;
     --deploy_hook)
-      local -r cert_dir="${RENEWED_LINEAGE}"
+      local -r lineage_dir="${RENEWED_LINEAGE}"
       ;;
     *)
       return 1
@@ -262,12 +264,12 @@ fetch_ocsp_response() {
   # Verify that the leaf certificate is still valid. If the certificate is
   # expired, we don't have to request a (new) OCSP response.
   if ! openssl x509 \
-    -in "${cert_dir}/cert.pem" \
+    -in "${lineage_dir}/cert.pem" \
     -checkend 0 \
     -noout >&3 2>&1; then
 
     ERROR_ENCOUNTERED="true"
-    certs_processed["${cert_name}"]="not updated"$'\t'"leaf certificate expired"
+    lineages_processed["${lineage_name}"]="not updated"$'\t'"leaf certificate expired"
     return
   fi
 
@@ -275,7 +277,7 @@ fetch_ocsp_response() {
   ocsp_endpoint="$(openssl x509 \
     -noout \
     -ocsp_uri \
-    -in "${cert_dir}/cert.pem" \
+    -in "${lineage_dir}/cert.pem" \
     2>&3)"
   readonly ocsp_endpoint
 
@@ -286,42 +288,42 @@ fetch_ocsp_response() {
   ocsp_call_output="$(openssl ocsp \
     -no_nonce \
     -url "${ocsp_endpoint}" \
-    -issuer "${cert_dir}/chain.pem" \
-    -cert "${cert_dir}/cert.pem" \
-    -verify_other "${cert_dir}/chain.pem" \
-    -respout "${temp_output_dir}/${cert_name}.der" 2>&3)"
+    -issuer "${lineage_dir}/chain.pem" \
+    -cert "${lineage_dir}/cert.pem" \
+    -verify_other "${lineage_dir}/chain.pem" \
+    -respout "${temp_output_dir}/${lineage_name}.der" 2>&3)"
   local -r ocsp_call_rc=${?}
   set -e
-  readonly ocsp_call_output="${ocsp_call_output#${cert_dir}/cert.pem: }"
+  readonly ocsp_call_output="${ocsp_call_output#${lineage_dir}/cert.pem: }"
   local -r cert_status="${ocsp_call_output%%$'\n'*}"
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED="true"
     if (( "${VERBOSITY}" >= 2 )); then
-      certs_processed["${cert_name}"]="not updated"$'\t'"${ocsp_call_output//[[:space:]]/ }"
+      lineages_processed["${lineage_name}"]="not updated"$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
-      certs_processed["${cert_name}"]="not updated"$'\t'"${cert_status}"
+      lineages_processed["${lineage_name}"]="not updated"$'\t'"${cert_status}"
     fi
     return
   fi
 
   # If arrived here status was good, so move OCSP staple file to definitive
   # folder
-  mv "${temp_output_dir}/${cert_name}.der" "${OUTPUT_DIR}/"
+  mv "${temp_output_dir}/${lineage_name}.der" "${OUTPUT_DIR}/"
 
-  certs_processed["${cert_name}"]="updated"
+  lineages_processed["${lineage_name}"]="updated"
 }
 
 print_and_handle_result() {
   local header="LINEAGE"$'\t'"RESULT"$'\t'"REASON"
 
-  for cert_name in "${!certs_processed[@]}"; do
-    local certs_processed_formatted+=$'\n'"${cert_name}"$'\t'"${certs_processed["${cert_name}"]}"
+  for lineage_name in "${!lineages_processed[@]}"; do
+    local lineages_processed_formatted+=$'\n'"${lineage_name}"$'\t'"${lineages_processed["${lineage_name}"]}"
   done
-  unset cert_name
-  certs_processed_formatted="$(sort <<< "${certs_processed_formatted:-}")"
-  readonly certs_processed_formatted
-  local output="${header}${certs_processed_formatted:-}"
+  unset lineage_name
+  lineages_processed_formatted="$(sort <<< "${lineages_processed_formatted:-}")"
+  readonly lineages_processed_formatted
+  local output="${header}${lineages_processed_formatted:-}"
 
   if [[ ${RELOAD_WEBSERVER:-} != "false" ]]; then
     reload_webserver
@@ -342,8 +344,8 @@ print_and_handle_result() {
 }
 
 reload_webserver() {
-  for cert_name in "${!certs_processed[@]}"; do
-    if [[ "${certs_processed["${cert_name}"]}" == "updated" ]]; then
+  for lineage_name in "${!lineages_processed[@]}"; do
+    if [[ "${lineages_processed["${lineage_name}"]}" == "updated" ]]; then
       if service nginx reload >&3 2>&1; then
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
         break
@@ -354,7 +356,7 @@ reload_webserver() {
       fi
     fi
   done
-  unset cert_name
+  unset lineage_name
   readonly output+="${nginx_status:-}"
 }
 

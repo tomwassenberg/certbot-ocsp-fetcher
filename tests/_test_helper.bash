@@ -5,20 +5,12 @@ set \
 IFS=$'\n'
 
 setup() {
-  CERTS_DIR="$(mktemp --directory)"
-  readonly CERTS_DIR
-  mkdir -- "${CERTS_DIR}/live"
+  CERTBOT_DIR="$(mktemp --directory)"
+  readonly CERTBOT_DIR
+  mkdir -- "${CERTBOT_DIR}/live"
 
   OUTPUT_DIR="$(mktemp --directory)"
   readonly -- OUTPUT_DIR
-}
-
-prepare_multiple_lineages() {
-  CERTS_DIR_MULTIPLE="$(mktemp --directory)"
-  readonly CERTS_DIR_MULTIPLE
-  mkdir -- "${CERTS_DIR_MULTIPLE}/live"
-  cp -R "${CERTS_DIR}/live/valid/" "${CERTS_DIR_MULTIPLE}/live/example1"
-  cp -R "${CERTS_DIR}/live/valid/" "${CERTS_DIR_MULTIPLE}/live/example2"
 }
 
 fetch_sample_certs() {
@@ -40,6 +32,9 @@ fetch_sample_certs() {
       revoked)
         lineages_host[revoked]="revoked.badssl.com"; shift
         ;;
+      --multiple)
+        local -l multiple=true; shift
+        ;;
       *)
         exit 1
         ;;
@@ -47,7 +42,7 @@ fetch_sample_certs() {
   done
 
   for lineage in "${!lineages_host[@]}"; do
-    mkdir "${CERTS_DIR}/live/${lineage}"
+    mkdir -- "${CERTBOT_DIR}/live/${lineage}"
 
     # Perform a TLS handshake
     tls_handshakes["${lineage}"]="$(openssl s_client \
@@ -60,7 +55,7 @@ fetch_sample_certs() {
     lineages_leaf["${lineage}"]="${tls_handshakes["${lineage}"]/#*-----BEGIN CERTIFICATE-----/-----BEGIN CERTIFICATE-----}"
     lineages_leaf["${lineage}"]="${lineages_leaf["${lineage}"]/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
     echo -n "${lineages_leaf["${lineage}"]}" > \
-      "${CERTS_DIR}/live/${lineage}/cert.pem"
+      "${CERTBOT_DIR}/live/${lineage}/cert.pem"
 
     # We don't need the complete certificate chain to determine that the leaf
     # certificate is expired.
@@ -86,14 +81,14 @@ fetch_sample_certs() {
       --retry 3 \
       "${lineage_issuer_cert_url}" | \
       openssl x509 -inform DER \
-      >"${CERTS_DIR}/live/${lineage}/chain.pem"
+      >"${CERTBOT_DIR}/live/${lineage}/chain.pem"
+
+    if [[ ${multiple} == "true" ]]; then
+      cp -R "${CERTBOT_DIR}/live/${lineage}/" "${CERTBOT_DIR}/live/${lineage}2"
+    fi
   done
 }
 
 teardown() {
-  rm -rf -- "${CERTS_DIR}"/live/{valid,expired,revoked} "${OUTPUT_DIR}"
-
-  if [[ -n "${CERTS_DIR_MULTIPLE:-}" ]]; then
-    rm -rf -- "${CERTS_DIR_MULTIPLE}"
-  fi
+  rm -rf -- "${CERTBOT_DIR}"/live/{valid,expired,revoked} "${OUTPUT_DIR}"
 }
