@@ -37,8 +37,9 @@ consequence, this allows you to use [OCSP Must-Staple].
 Invoke the tool as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-update]
-[-h/--help] [-n/--cert-name CERT_NAME[,CERT_NAME...]] [-o/--output-dir
-DIRECTORY] [-q/--quiet] [-v/--verbose] [-w/--no-reload-webserver]`
+[-h/--help] [-n/--cert-name CERT_NAME[,CERT_NAME...] [-u/--ocsp-responder
+OCSP_URL]] [-o/--output-dir DIRECTORY] [-q/--quiet] [-v/--verbose]
+[-w/--no-reload-webserver]`
 
 The filename of a resulting OCSP staple is the name of the certificate lineage
 (as used by Certbot) with the `der` extension appended. Be sure to point nginx
@@ -89,6 +90,14 @@ tool:
   all certificate lineages in Certbot's configuration directory.\
   This flag cannot be used when the tool is invoked as a deploy hook by
   Certbot.
+
+- `-u/--ocsp-responder` \
+  Specify the URL of the OCSP responder to query for the certificate lineage(s)
+  that were specified *directly* before this flag on the command line. This is
+  required when the certificate in question does not use the AIA extension to
+  include the OCSP responder of its issuer. For instance, you could invoke the
+  command as follows: `./certbot-ocsp-fetcher.sh --cert-name
+  1.example.com,2.example.com --ocsp-responder ocsp.ca.example.com`
 
 - `-o, --output-dir`\
   Specify the directory where OCSP staple files are saved. When not specified,

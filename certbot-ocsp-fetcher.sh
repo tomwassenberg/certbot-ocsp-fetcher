@@ -20,7 +20,7 @@ parse_cli_arguments() {
     "[-c/--certbot-dir DIRECTORY]"
     "[-f/--force-update]"
     "[-h/--help]"
-    "[-n/--cert-name CERT_NAME[,CERT_NAME...]]"
+    "[-n/--cert-name CERT_NAME[,CERT_NAME...] [-u/--ocsp-responder OCSP_URL]]"
     "[-o/--output-dir DIRECTORY]"
     "[-q/--quiet]"
     "[-v/--verbose]"
@@ -52,13 +52,43 @@ parse_cli_arguments() {
         ;;
       -n|--cert-name)
         if [[ -n ${2:-} ]]; then
-          declare -ag CERT_LINEAGES
+          declare -Ag CERT_LINEAGES
+
+          # Loop over any lineages passed in the same value of --cert-name.
           OLDIFS="${IFS}"
           IFS=,
           for lineage_name in ${2}; do
-            CERT_LINEAGES+=("${lineage_name}")
+            # Check if a hardcoded OCSP responder was specified for this set of
+            # lineages.
+            case ${3:-} in
+              -u|--ocsp-responder)
+                if [[ -n ${4:-} ]]; then
+                  CERT_LINEAGES["${lineage_name}"]="${4}"
+                else
+                  exit_with_error "${usage[@]}"
+                fi
+                ;;
+              *)
+                # If no OCSP responder was specified, just save the lineage
+                # name as the key, with an empty value.
+                CERT_LINEAGES["${lineage_name}"]=
+                ;;
+            esac
           done
+          unset lineage_name
           IFS="${OLDIFS}"
+
+          # To check if we passed any OCSP responder for this set of lineages,
+          # loop over the new associative array. If so, shift two extra
+          # positional arguments, to account for the --ocsp-responder flag and
+          # value.
+          for lineage_name in "${!CERT_LINEAGES[@]}"; do
+            if [[ -n ${CERT_LINEAGES[${lineage_name}]:-} ]]; then
+              shift 2
+            fi
+            break
+          done
+          unset lineage_name
           shift 2
         else
           exit_with_error "${usage[@]}"
@@ -151,11 +181,14 @@ run_standalone() {
 
   # Check specific lineage if passed on CLI,
   # or otherwise all lineages in Certbot's dir
-  if [[ -v CERT_LINEAGES[*] ]]; then
-    for lineage_name in "${CERT_LINEAGES[@]}"; do
+  if [[ -v CERT_LINEAGES[@] ]]; then
+    for lineage_name in "${!CERT_LINEAGES[@]}"; do
       if [[ -r "${CERTBOT_DIR}/live/${lineage_name}" ]]; then
         fetch_ocsp_response \
-          "--standalone" "${lineage_name}" "${temp_output_dir}"
+          "--standalone" \
+          "${temp_output_dir}" \
+          "${lineage_name}" \
+          "${CERT_LINEAGES["${lineage_name}"]}"
       else
         exit_with_error \
         "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
@@ -166,7 +199,7 @@ run_standalone() {
     for lineage_dir in "${CERTBOT_DIR}"/live/*
     do
       fetch_ocsp_response \
-        "--standalone" "${lineage_dir##*/}" "${temp_output_dir}"
+        "--standalone" "${temp_output_dir}" "${lineage_dir##*/}"
     done
     unset lineage_dir
     set -f
@@ -192,7 +225,7 @@ run_as_deploy_hook() {
       "when run as Certbot hook"
   fi
 
-  if [[ -v CERT_LINEAGES[*] ]]; then
+  if [[ -v CERT_LINEAGES[@] ]]; then
     # The certificate lineage is already inferred from the environment
     # variable that Certbot passes
     exit_with_error \
@@ -200,7 +233,7 @@ run_as_deploy_hook() {
   fi
 
   fetch_ocsp_response \
-    "--deploy_hook" "${RENEWED_LINEAGE##*/}" "${temp_output_dir}"
+    "--deploy_hook" "${temp_output_dir}" "${RENEWED_LINEAGE##*/}"
 }
 
 # Check if it's necessary to fetch a new OCSP response
@@ -246,11 +279,12 @@ check_for_existing_ocsp_staple_file() {
 
 # Generate file used by ssl_stapling_file in nginx config of websites
 # $1 - Whether to run as a deploy hook for Certbot, or standalone
-# $2 - Name of certificate lineage
-# $3 - Path to temporary output directory
+# $2 - Path to temporary output directory
+# $3 - Name of certificate lineage
+# $4 - OCSP endpoint (if specified on command line)
 fetch_ocsp_response() {
-  local -r lineage_name="${2}";
-  local -r temp_output_dir="${3}"
+  local -r temp_output_dir="${2}"
+  local -r lineage_name="${3}"
   case ${1} in
     --standalone)
       local -r lineage_dir="${CERTBOT_DIR}/live/${lineage_name}"
@@ -283,12 +317,15 @@ fetch_ocsp_response() {
   fi
 
   local ocsp_endpoint
-  ocsp_endpoint="$(openssl x509 \
-    -noout \
-    -ocsp_uri \
-    -in "${lineage_dir}/cert.pem" \
-    2>&3)"
-  readonly ocsp_endpoint
+  if [[ -n ${1:-} ]]; then
+    ocsp_endpoint="${1}"
+  else
+    ocsp_endpoint="$(openssl x509 \
+      -noout \
+      -ocsp_uri \
+      -in "${lineage_dir}/cert.pem" \
+      2>&3)"
+  fi
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
