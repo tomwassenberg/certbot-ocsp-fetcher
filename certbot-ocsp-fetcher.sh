@@ -102,7 +102,7 @@ parse_cli_arguments() {
 
 # Set output directory if necessary and check if it's writeable
 prepare_output_dir() {
-  if [[ -n ${OUTPUT_DIR:-} ]]; then
+  if [[ -v OUTPUT_DIR ]]; then
     if [[ ! -e ${OUTPUT_DIR} ]]; then
       # Don't yet fail if it's not possible to create the directory, so we can
       # exit with a custom error down below
@@ -130,7 +130,7 @@ start_in_correct_mode() {
   declare -A lineages_processed
 
   # These two environment variables are set if this script is invoked by Certbot
-  if [[ -z ${RENEWED_DOMAINS:-} || -z ${RENEWED_LINEAGE:-} ]]; then
+  if [[ ! -v RENEWED_DOMAINS || ! -v RENEWED_LINEAGE ]]; then
     run_standalone
   else
     run_as_deploy_hook
@@ -176,7 +176,7 @@ run_standalone() {
 # Run in deploy-hook mode, only processing the passed lineage
 # $1 - Path to temporary output directory
 run_as_deploy_hook() {
-  if [[ -n ${CERTBOT_DIR:-} ]]; then
+  if [[ -v CERTBOT_DIR ]]; then
     # The directory is already inferred from the environment variable that
     # Certbot passes
     exit_with_error \
@@ -184,7 +184,7 @@ run_as_deploy_hook() {
       "when run as Certbot hook"
   fi
 
-  if [[ -n ${FORCE_UPDATE:-} ]]; then
+  if [[ -v FORCE_UPDATE ]]; then
     # When run as deploy hook the behavior of this flag is used by default.
     # Therefore passing this flag would not have any effect.
     exit_with_error \
