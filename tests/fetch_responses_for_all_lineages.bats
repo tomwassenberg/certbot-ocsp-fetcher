@@ -16,11 +16,11 @@ load _test_helper
     if [[ ${line} == 0 ]]; then
       [[ ${lines[${line}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
     else
-      for lineage in "${CERTBOT_DIR}"/live/*; do
-        [[ -f "${OUTPUT_DIR}/${lineage##*/}.der" ]]
+      for lineage_name in "${CERTBOT_DIR}"/live/*; do
+        [[ -f "${OUTPUT_DIR}/${lineage_name##*/}.der" ]]
 
         local -l cert_found=false
-        if [[ ${lines[${line}]} =~ ^"${lineage##*/}"[[:blank:]]+updated$ ]]
+        if [[ ${lines[${line}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated$ ]]
         then
           cert_found=true
           break

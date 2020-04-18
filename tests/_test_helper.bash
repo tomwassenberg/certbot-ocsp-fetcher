@@ -41,25 +41,25 @@ fetch_sample_certs() {
     esac
   done
 
-  for lineage in "${!lineages_host[@]}"; do
-    mkdir -- "${CERTBOT_DIR}/live/${lineage}"
+  for lineage_name in "${!lineages_host[@]}"; do
+    mkdir -- "${CERTBOT_DIR}/live/${lineage_name}"
 
     # Perform a TLS handshake
-    tls_handshakes["${lineage}"]="$(openssl s_client \
-      -connect "${lineages_host["${lineage}"]}:443" \
-      -servername "${lineages_host["${lineage}"]}" \
+    tls_handshakes["${lineage_name}"]="$(openssl s_client \
+      -connect "${lineages_host["${lineage_name}"]}:443" \
+      -servername "${lineages_host["${lineage_name}"]}" \
       2>/dev/null \
       </dev/null)"
     # Strip leading and trailing output, retaining only the leaf certificate as
     # printed by OpenSSL
-    lineages_leaf["${lineage}"]="${tls_handshakes["${lineage}"]/#*-----BEGIN CERTIFICATE-----/-----BEGIN CERTIFICATE-----}"
-    lineages_leaf["${lineage}"]="${lineages_leaf["${lineage}"]/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
-    echo -n "${lineages_leaf["${lineage}"]}" > \
-      "${CERTBOT_DIR}/live/${lineage}/cert.pem"
+    lineages_leaf["${lineage_name}"]="${tls_handshakes["${lineage_name}"]/#*-----BEGIN CERTIFICATE-----/-----BEGIN CERTIFICATE-----}"
+    lineages_leaf["${lineage_name}"]="${lineages_leaf["${lineage_name}"]/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
+    echo -n "${lineages_leaf["${lineage_name}"]}" > \
+      "${CERTBOT_DIR}/live/${lineage_name}/cert.pem"
 
     # We don't need the complete certificate chain to determine that the leaf
     # certificate is expired.
-    if [[ ${lineage} == "expired" ]]; then
+    if [[ ${lineage_name} == "expired" ]]; then
       continue
     fi
 
@@ -68,7 +68,7 @@ fetch_sample_certs() {
     lineage_issuer_cert_url="$(openssl \
       x509 \
       -text \
-      <<< "${lineages_leaf["${lineage}"]}" | \
+      <<< "${lineages_leaf["${lineage_name}"]}" | \
       grep \
         --only-matching \
         --perl-regexp \
@@ -81,12 +81,12 @@ fetch_sample_certs() {
       --retry 3 \
       "${lineage_issuer_cert_url}" | \
       openssl x509 -inform DER \
-      >"${CERTBOT_DIR}/live/${lineage}/chain.pem"
+      >"${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
 
     if [[ ${multiple} == "true" ]]; then
-      mv "${CERTBOT_DIR}/live/${lineage}/" "${CERTBOT_DIR}/live/${lineage}1"
-      cp -R "${CERTBOT_DIR}/live/${lineage}1/" "${CERTBOT_DIR}/live/${lineage}2"
-      cp -R "${CERTBOT_DIR}/live/${lineage}1/" "${CERTBOT_DIR}/live/${lineage}3"
+      mv "${CERTBOT_DIR}/live/${lineage_name}/" "${CERTBOT_DIR}/live/${lineage_name}1"
+      cp -R "${CERTBOT_DIR}/live/${lineage_name}1/" "${CERTBOT_DIR}/live/${lineage_name}2"
+      cp -R "${CERTBOT_DIR}/live/${lineage_name}1/" "${CERTBOT_DIR}/live/${lineage_name}3"
     fi
   done
 }
