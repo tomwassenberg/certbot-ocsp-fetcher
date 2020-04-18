@@ -20,7 +20,7 @@ parse_cli_arguments() {
     "[-c/--certbot-dir DIRECTORY]"
     "[-f/--force-update]"
     "[-h/--help]"
-    "[-n/--cert-name CERTNAME]"
+    "[-n/--cert-name CERT_NAME[,CERT_NAME...]]"
     "[-o/--output-dir DIRECTORY]"
     "[-q/--quiet]"
     "[-v/--verbose]"
@@ -52,7 +52,14 @@ parse_cli_arguments() {
         ;;
       -n|--cert-name)
         if [[ -n ${2:-} ]]; then
-          declare -gr CERT_LINEAGE="${2}"; shift 2
+          declare -ag CERT_LINEAGES
+          OLDIFS="${IFS}"
+          IFS=,
+          for lineage_name in ${2}; do
+            CERT_LINEAGES+=("${lineage_name}")
+          done
+          IFS="${OLDIFS}"
+          shift 2
         else
           exit_with_error "${usage[@]}"
         fi
@@ -144,14 +151,16 @@ run_standalone() {
 
   # Check specific lineage if passed on CLI,
   # or otherwise all lineages in Certbot's dir
-  if [[ -n "${CERT_LINEAGE:-}" ]]; then
-    if [[ -r "${CERTBOT_DIR}/live/${CERT_LINEAGE}" ]]; then
-      fetch_ocsp_response \
-        "--standalone" "${CERT_LINEAGE}" "${temp_output_dir}"
-    else
-      exit_with_error \
-      "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${CERT_LINEAGE}"
-    fi
+  if [[ -v CERT_LINEAGES[*] ]]; then
+    for lineage_name in "${CERT_LINEAGES[@]}"; do
+      if [[ -r "${CERTBOT_DIR}/live/${lineage_name}" ]]; then
+        fetch_ocsp_response \
+          "--standalone" "${lineage_name}" "${temp_output_dir}"
+      else
+        exit_with_error \
+        "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
+      fi
+    done
   else
     set +f; shopt -s nullglob
     for lineage_dir in "${CERTBOT_DIR}"/live/*
@@ -183,7 +192,7 @@ run_as_deploy_hook() {
       "when run as Certbot hook"
   fi
 
-  if [[ -n ${CERT_LINEAGE:-} ]]; then
+  if [[ -v CERT_LINEAGES[*] ]]; then
     # The certificate lineage is already inferred from the environment
     # variable that Certbot passes
     exit_with_error \

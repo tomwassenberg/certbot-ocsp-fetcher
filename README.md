@@ -37,8 +37,8 @@ consequence, this allows you to use [OCSP Must-Staple].
 Invoke the tool as follows:
 
 `# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-update]
-[-h/--help] [-n/--cert-name CERTNAME] [-o/--output-dir DIRECTORY] [-q/--quiet]
-[-v/--verbose] [-w/--no-reload-webserver]`
+[-h/--help] [-n/--cert-name CERT_NAME[,CERT_NAME...]] [-o/--output-dir
+DIRECTORY] [-q/--quiet] [-v/--verbose] [-w/--no-reload-webserver]`
 
 The filename of a resulting OCSP staple is the name of the certificate lineage
 (as used by Certbot) with the `der` extension appended. Be sure to point nginx
@@ -83,9 +83,10 @@ tool:
   Print the correct usage of the tool.
 
 - `-n, --cert-name`\
-  Specify the name of the certificate lineage (as used by Certbot) that you
-  want to process. When not specified, the tool processes all certificate
-  lineages in Certbot's configuration directory.\
+  Specify the name of the certificate lineage(s) (as used by Certbot) that you
+  want to process. Express multiple lineages by delimiting these with a comma,
+  or specify the flag multiple times. When not specified, the tool processes
+  all certificate lineages in Certbot's configuration directory.\
   This flag cannot be used when the tool is invoked as a deploy hook by
   Certbot.
 

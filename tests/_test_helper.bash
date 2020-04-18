@@ -84,7 +84,9 @@ fetch_sample_certs() {
       >"${CERTBOT_DIR}/live/${lineage}/chain.pem"
 
     if [[ ${multiple} == "true" ]]; then
-      cp -R "${CERTBOT_DIR}/live/${lineage}/" "${CERTBOT_DIR}/live/${lineage}2"
+      mv "${CERTBOT_DIR}/live/${lineage}/" "${CERTBOT_DIR}/live/${lineage}1"
+      cp -R "${CERTBOT_DIR}/live/${lineage}1/" "${CERTBOT_DIR}/live/${lineage}2"
+      cp -R "${CERTBOT_DIR}/live/${lineage}1/" "${CERTBOT_DIR}/live/${lineage}3"
     fi
   done
 }
