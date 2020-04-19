@@ -28,13 +28,16 @@ parse_cli_arguments() {
   )
 
   declare -gi VERBOSITY=1
+  local -r verbosity_error=(
+    "error: -q/--quiet cannot be specified in conjunction with -v/--verbose."
+  )
 
   while [[ ${#} -gt 0 ]]; do
     local parameter="${1}"
 
     case ${parameter} in
       -c|--certbot-dir)
-        if [[ -n ${2:-} ]]; then
+        if [[ -n ${2:-} && ! -v CERTBOT_DIR ]]; then
           CERTBOT_DIR="$(realpath \
             --canonicalize-missing \
             --relative-base . \
@@ -44,7 +47,7 @@ parse_cli_arguments() {
         fi
         ;;
       -f|--force-update)
-        FORCE_UPDATE="true"; shift
+        readonly FORCE_UPDATE="true"; shift
         ;;
       -h|--help)
         echo >&2 "${usage[@]}"
@@ -100,15 +103,24 @@ parse_cli_arguments() {
             --canonicalize-missing \
             --relative-base . \
             -- "${2}")"; shift 2
+          readonly OUTPUT_DIR
         else
           exit_with_error "${usage[@]}"
         fi
         ;;
       -q|--quiet)
-        VERBOSITY=0
+        if [[ ${VERBOSITY} != 1 ]]; then
+          exit_with_error "${verbosity_error[@]}"
+        else
+          readonly VERBOSITY=0; shift
+        fi
         ;;
       -v|--verbose)
-        VERBOSITY+=1; shift
+        if [[ ${VERBOSITY} == 0 ]]; then
+          exit_with_error "${verbosity_error[@]}"
+        else
+          VERBOSITY+=1; shift
+        fi
         ;;
       -w|--no-reload-webserver)
         declare -glr RELOAD_WEBSERVER="false"; shift
