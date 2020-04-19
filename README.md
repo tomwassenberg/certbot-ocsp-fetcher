@@ -33,6 +33,8 @@ consequence, this allows you to use [OCSP Must-Staple].
 - nginx (tested with 1.14.0)
 - OpenSSL 1.1.0+
 
+For running the tests, [Bats] is also required.
+
 ## Usage
 Invoke the tool as follows:
 
@@ -120,3 +122,4 @@ tool:
  [#812]: https://trac.nginx.org/nginx/ticket/812
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
+ [Bats]: https://github.com/bats-core/bats-core
