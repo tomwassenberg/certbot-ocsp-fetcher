@@ -36,24 +36,26 @@ parse_cli_arguments() {
     local parameter="${1}"
 
     case ${parameter} in
-      -c|--certbot-dir)
+      -c | --certbot-dir)
         if [[ -n ${2:-} && ! -v CERTBOT_DIR ]]; then
           CERTBOT_DIR="$(realpath \
             --canonicalize-missing \
             --relative-base . \
-            -- "${2}")"; shift 2
+            -- "${2}")"
+          shift 2
         else
           exit_with_error "${usage[@]}"
         fi
         ;;
-      -f|--force-update)
-        readonly FORCE_UPDATE="true"; shift
+      -f | --force-update)
+        readonly FORCE_UPDATE="true"
+        shift
         ;;
-      -h|--help)
+      -h | --help)
         echo >&2 "${usage[@]}"
         exit
         ;;
-      -n|--cert-name)
+      -n | --cert-name)
         if [[ -n ${2:-} ]]; then
           declare -Ag CERT_LINEAGES
 
@@ -64,7 +66,7 @@ parse_cli_arguments() {
             # Check if a hardcoded OCSP responder was specified for this set of
             # lineages.
             case ${3:-} in
-              -u|--ocsp-responder)
+              -u | --ocsp-responder)
                 if [[ -n ${4:-} ]]; then
                   CERT_LINEAGES["${lineage_name}"]="${4}"
                 else
@@ -97,33 +99,37 @@ parse_cli_arguments() {
           exit_with_error "${usage[@]}"
         fi
         ;;
-      -o|--output-dir)
+      -o | --output-dir)
         if [[ -n ${2:-} ]]; then
           OUTPUT_DIR="$(realpath \
             --canonicalize-missing \
             --relative-base . \
-            -- "${2}")"; shift 2
+            -- "${2}")"
+          shift 2
           readonly OUTPUT_DIR
         else
           exit_with_error "${usage[@]}"
         fi
         ;;
-      -q|--quiet)
+      -q | --quiet)
         if [[ ${VERBOSITY} != 1 ]]; then
           exit_with_error "${verbosity_error[@]}"
         else
-          readonly VERBOSITY=0; shift
+          readonly VERBOSITY=0
+          shift
         fi
         ;;
-      -v|--verbose)
+      -v | --verbose)
         if [[ ${VERBOSITY} == 0 ]]; then
           exit_with_error "${verbosity_error[@]}"
         else
-          VERBOSITY+=1; shift
+          VERBOSITY+=1
+          shift
         fi
         ;;
-      -w|--no-reload-webserver)
-        declare -glr RELOAD_WEBSERVER="false"; shift
+      -w | --no-reload-webserver)
+        declare -glr RELOAD_WEBSERVER="false"
+        shift
         ;;
       *)
         exit_with_error "${usage[@]}"
@@ -135,7 +141,7 @@ parse_cli_arguments() {
   # we call in the script is redirected to file descriptor 3.  Depending on the
   # desired verbosity, we redirect this file descriptor to either stderr or to
   # /dev/null.
-  if (( "${VERBOSITY}" >= 2 )); then
+  if (("${VERBOSITY}" >= 2)); then
     exec 3>&2
   else
     exec 3>/dev/null
@@ -203,13 +209,13 @@ run_standalone() {
           "${CERT_LINEAGES["${lineage_name}"]}"
       else
         exit_with_error \
-        "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
+          "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
       fi
     done
   else
-    set +f; shopt -s nullglob
-    for lineage_dir in "${CERTBOT_DIR}"/live/*
-    do
+    set +f
+    shopt -s nullglob
+    for lineage_dir in "${CERTBOT_DIR}"/live/*; do
       fetch_ocsp_response \
         "--standalone" "${temp_output_dir}" "${lineage_dir##*/}"
     done
@@ -265,8 +271,7 @@ check_for_existing_ocsp_staple_file() {
   set -e
   readonly existing_ocsp_response
 
-
-  [[ "${existing_ocsp_response_rc}" == 0 ]] || return 1
+  [[ ${existing_ocsp_response_rc} == 0 ]] || return 1
 
   for existing_ocsp_response_line in ${existing_ocsp_response}; do
     if [[ ${existing_ocsp_response_line} =~ "This Update: "(.+) ]]; then
@@ -275,18 +280,17 @@ check_for_existing_ocsp_staple_file() {
       local -r next_update="${BASH_REMATCH[1]}"
     fi
   done
-  [[ -n "${this_update:-}" && -n "${next_update:-}" ]] || return 1
+  [[ -n ${this_update:-} && -n ${next_update:-} ]] || return 1
 
   # Only continue fetching OCSP response if existing response expires within
   # half of its lifetime.
   # Note: A non-zero return code of one of the `date` calls is not caught by
   # Strict Mode, but this isn't critical, since it essentially skips the date
   # check then and always fetches the OCSP response.
-  local -ri response_lifetime_in_seconds=$(( \
-    $(date +%s --date "${next_update}") - $(date +%s --date "${this_update}") ))
-  (( $(date +%s) < \
-    $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2 )) \
-    || return 1
+  local -ri response_lifetime_in_seconds=$((\
+    $(date +%s --date "${next_update}") - $(date +%s --date "${this_update}")))
+  (($(date +%s) < \
+  $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2)) || return 1
 }
 
 # Generate file used by ssl_stapling_file in nginx config of websites
@@ -301,7 +305,7 @@ fetch_ocsp_response() {
     --standalone)
       local -r lineage_dir="${CERTBOT_DIR}/live/${lineage_name}"
 
-      if [[ ${FORCE_UPDATE:-} != "true" ]] && \
+      if [[ ${FORCE_UPDATE:-} != "true" ]] &&
         check_for_existing_ocsp_staple_file; then
         lineages_processed["${lineage_name}"]="not updated"$'\t'"valid staple file on disk"
         return
@@ -357,7 +361,7 @@ fetch_ocsp_response() {
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED="true"
-    if (( "${VERBOSITY}" >= 2 )); then
+    if (("${VERBOSITY}" >= 2)); then
       lineages_processed["${lineage_name}"]="not updated"$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
       lineages_processed["${lineage_name}"]="not updated"$'\t'"${cert_status}"
@@ -379,7 +383,7 @@ print_and_handle_result() {
     local lineages_processed_formatted+=$'\n'"${lineage_name}"$'\t'"${lineages_processed["${lineage_name}"]}"
   done
   unset lineage_name
-  lineages_processed_formatted="$(sort <<< "${lineages_processed_formatted:-}")"
+  lineages_processed_formatted="$(sort <<<"${lineages_processed_formatted:-}")"
   readonly lineages_processed_formatted
   local output="${header}${lineages_processed_formatted:-}"
 
@@ -387,23 +391,23 @@ print_and_handle_result() {
     reload_webserver
   fi
 
-  if (( "${VERBOSITY}" >= 1 )); then
+  if (("${VERBOSITY}" >= 1)); then
     if command -v column >&-; then
-      column -ents$'\t' <<< "${output}"
+      column -ents$'\t' <<<"${output}"
     else
       echo >&2 \
-        "Install BSD \"column\" for properly formatted output. On Ubuntu," \
-        "this can be done by installing the \"bsdmainutils\" package."$'\n'
+        'Install BSD "column" for properly formatted output. On Ubuntu,' \
+        'this can be done by installing the "bsdmainutils" package.'$'\n'
       echo "${output}"
     fi
   fi
 
-  [[ "${ERROR_ENCOUNTERED:-}" != "true" ]]
+  [[ ${ERROR_ENCOUNTERED:-} != "true" ]]
 }
 
 reload_webserver() {
   for lineage_name in "${!lineages_processed[@]}"; do
-    if [[ "${lineages_processed["${lineage_name}"]}" == "updated" ]]; then
+    if [[ ${lineages_processed["${lineage_name}"]} == "updated" ]]; then
       if service nginx reload >&3 2>&1; then
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
         break

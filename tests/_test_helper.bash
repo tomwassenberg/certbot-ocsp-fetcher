@@ -15,7 +15,8 @@ setup() {
 
 fetch_sample_certs() {
   if ! command -v curl >/dev/null; then
-    echo >&2 "This test expects \`curl\` to be available in \$PATH."
+    # shellcheck disable=2016
+    echo >&2 'This test expects `curl` to be available in $PATH.'
     exit 1
   fi
 
@@ -24,16 +25,20 @@ fetch_sample_certs() {
   while [[ ${#} -gt 0 ]]; do
     case ${1} in
       valid)
-        lineages_host[valid]="mozilla-modern.badssl.com"; shift
+        lineages_host[valid]="mozilla-modern.badssl.com"
+        shift
         ;;
       expired)
-        lineages_host[expired]="expired.badssl.com"; shift
+        lineages_host[expired]="expired.badssl.com"
+        shift
         ;;
       revoked)
-        lineages_host[revoked]="revoked.badssl.com"; shift
+        lineages_host[revoked]="revoked.badssl.com"
+        shift
         ;;
       --multiple)
-        local -l multiple=true; shift
+        local -l multiple=true
+        shift
         ;;
       *)
         exit 1
@@ -68,7 +73,7 @@ fetch_sample_certs() {
     lineage_issuer_cert_url="$(openssl \
       x509 \
       -text \
-      <<< "${lineages_leaf["${lineage_name}"]}" | \
+      <<<"${lineages_leaf["${lineage_name}"]}" |
       grep \
         --only-matching \
         --perl-regexp \
@@ -79,9 +84,9 @@ fetch_sample_certs() {
       --show-error \
       --location \
       --retry 3 \
-      "${lineage_issuer_cert_url}" | \
+      "${lineage_issuer_cert_url}" |
       openssl x509 -inform DER \
-      >"${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
+        >"${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
 
     if [[ ${multiple} == "true" ]]; then
       mv "${CERTBOT_DIR}/live/${lineage_name}/" "${CERTBOT_DIR}/live/${lineage_name}1"
