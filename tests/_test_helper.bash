@@ -24,16 +24,16 @@ fetch_sample_certs() {
 
   while [[ ${#} -gt 0 ]]; do
     case ${1} in
-      valid)
-        lineages_host[valid]="mozilla-modern.badssl.com"
+      "valid example")
+        lineages_host["${1}"]="mozilla-modern.badssl.com"
         shift
         ;;
-      expired)
-        lineages_host[expired]="expired.badssl.com"
+      "expired example")
+        lineages_host["${1}"]="expired.badssl.com"
         shift
         ;;
-      revoked)
-        lineages_host[revoked]="revoked.badssl.com"
+      "revoked example")
+        lineages_host["${1}"]="revoked.badssl.com"
         shift
         ;;
       --multiple)
@@ -64,7 +64,7 @@ fetch_sample_certs() {
 
     # We don't need the complete certificate chain to determine that the leaf
     # certificate is expired.
-    if [[ ${lineage_name} == "expired" ]]; then
+    if [[ ${lineage_name} == "expired example" ]]; then
       continue
     fi
 
@@ -89,13 +89,13 @@ fetch_sample_certs() {
         >"${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
 
     if [[ ${multiple} == "true" ]]; then
-      mv "${CERTBOT_DIR}/live/${lineage_name}/" "${CERTBOT_DIR}/live/${lineage_name}1"
-      cp -R "${CERTBOT_DIR}/live/${lineage_name}1/" "${CERTBOT_DIR}/live/${lineage_name}2"
-      cp -R "${CERTBOT_DIR}/live/${lineage_name}1/" "${CERTBOT_DIR}/live/${lineage_name}3"
+      mv "${CERTBOT_DIR}/live/${lineage_name}/" "${CERTBOT_DIR}/live/${lineage_name} 1"
+      cp -R "${CERTBOT_DIR}/live/${lineage_name} 1/" "${CERTBOT_DIR}/live/${lineage_name} 2"
+      cp -R "${CERTBOT_DIR}/live/${lineage_name} 1/" "${CERTBOT_DIR}/live/${lineage_name} 3"
     fi
   done
 }
 
 teardown() {
-  rm -rf -- "${CERTBOT_DIR}"/live/{valid,expired,revoked} "${OUTPUT_DIR}"
+  rm -rf -- "${CERTBOT_DIR}" "${OUTPUT_DIR}"
 }

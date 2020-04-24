@@ -3,14 +3,14 @@
 load _test_helper
 
 @test "fetch OCSP responses for multiple valid certificate lineages" {
-  fetch_sample_certs --multiple valid
+  fetch_sample_certs --multiple "valid example"
 
   run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
     --no-reload-webserver \
     --certbot-dir "${CERTBOT_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
-    --cert-name valid1,valid2 \
-    --cert-name valid3
+    --cert-name "valid example 1,valid example 2" \
+    --cert-name "valid example 3"
 
   [[ ${status} == 0 ]]
 

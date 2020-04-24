@@ -4,7 +4,7 @@ load _test_helper
 
 @test "fail when passing incompatible flags when ran as a deploy hook for Certbot" {
   RENEWED_DOMAINS=foo \
-    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid" \
+    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
       --cert-name "example"
 
@@ -12,7 +12,7 @@ load _test_helper
   [[ ${lines[0]} =~ ^error: ]]
 
   RENEWED_DOMAINS=foo \
-    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid" \
+    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
       --certbot-dir "${CERTBOT_DIR}"
 
@@ -20,12 +20,12 @@ load _test_helper
   [[ ${lines[0]} =~ ^error: ]]
 
   RENEWED_DOMAINS=foo \
-    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid" \
+    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
       --force-update
 
   [[ ${status} != 0 ]]
   [[ ${lines[0]} =~ ^error: ]]
 
-  [[ ! -e "${OUTPUT_DIR}/valid.der" ]]
+  [[ ! -e "${OUTPUT_DIR}/valid example.der" ]]
 }
