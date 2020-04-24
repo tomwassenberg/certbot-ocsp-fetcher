@@ -216,11 +216,11 @@ run_standalone() {
     set +f
     shopt -s nullglob
     for lineage_dir in "${CERTBOT_DIR}"/live/*; do
+      set -f
       fetch_ocsp_response \
         "--standalone" "${temp_output_dir}" "${lineage_dir##*/}"
     done
     unset lineage_dir
-    set -f
   fi
 }
 
