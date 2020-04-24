@@ -33,22 +33,22 @@ parse_cli_arguments() {
   )
 
   while [[ ${#} -gt 0 ]]; do
-    local parameter="${1}"
+    local parameter=${1}
 
     case ${parameter} in
       -c | --certbot-dir)
         if [[ -n ${2:-} && ! -v CERTBOT_DIR ]]; then
-          CERTBOT_DIR="$(realpath \
+          CERTBOT_DIR=$(realpath \
             --canonicalize-missing \
             --relative-base . \
-            -- "${2}")"
+            -- "${2}")
           shift 2
         else
           exit_with_error "${usage[@]}"
         fi
         ;;
       -f | --force-update)
-        readonly FORCE_UPDATE="true"
+        readonly FORCE_UPDATE=true
         shift
         ;;
       -h | --help)
@@ -60,7 +60,7 @@ parse_cli_arguments() {
           declare -Ag CERT_LINEAGES
 
           # Loop over any lineages passed in the same value of --cert-name.
-          OLDIFS="${IFS}"
+          OLDIFS=${IFS}
           IFS=,
           for lineage_name in ${2}; do
             # Check if a hardcoded OCSP responder was specified for this set of
@@ -68,7 +68,7 @@ parse_cli_arguments() {
             case ${3:-} in
               -u | --ocsp-responder)
                 if [[ -n ${4:-} ]]; then
-                  CERT_LINEAGES["${lineage_name}"]="${4}"
+                  CERT_LINEAGES["${lineage_name}"]=${4}
                 else
                   exit_with_error "${usage[@]}"
                 fi
@@ -81,7 +81,7 @@ parse_cli_arguments() {
             esac
           done
           unset lineage_name
-          IFS="${OLDIFS}"
+          IFS=${OLDIFS}
 
           # To check if we passed any OCSP responder for this set of lineages,
           # loop over the new associative array. If so, shift two extra
@@ -101,10 +101,10 @@ parse_cli_arguments() {
         ;;
       -o | --output-dir)
         if [[ -n ${2:-} ]]; then
-          OUTPUT_DIR="$(realpath \
+          OUTPUT_DIR=$(realpath \
             --canonicalize-missing \
             --relative-base . \
-            -- "${2}")"
+            -- "${2}")
           shift 2
           readonly OUTPUT_DIR
         else
@@ -128,7 +128,7 @@ parse_cli_arguments() {
         fi
         ;;
       -w | --no-reload-webserver)
-        declare -glr RELOAD_WEBSERVER="false"
+        declare -glr RELOAD_WEBSERVER=false
         shift
         ;;
       *)
@@ -159,7 +159,7 @@ prepare_output_dir() {
         -- "${OUTPUT_DIR}" || true
     fi
   else
-    readonly OUTPUT_DIR="."
+    readonly OUTPUT_DIR=.
   fi
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then
@@ -172,7 +172,7 @@ start_in_correct_mode() {
   # Create temporary directory to store OCSP staple file,
   # before having checked the certificate status in the response
   local temp_output_dir
-  temp_output_dir="$(mktemp --directory)"
+  temp_output_dir=$(mktemp --directory)
   readonly temp_output_dir
 
   declare -A lineages_processed
@@ -190,9 +190,9 @@ start_in_correct_mode() {
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
 # $1 - Path to temporary output directory
 run_standalone() {
-  readonly CERTBOT_DIR="${CERTBOT_DIR:-/etc/letsencrypt}"
+  readonly CERTBOT_DIR=${CERTBOT_DIR:-/etc/letsencrypt}
 
-  if [[ ! -r "${CERTBOT_DIR}/live" ]]; then
+  if [[ ! -r ${CERTBOT_DIR}/live ]]; then
     exit_with_error \
       "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live"
   fi
@@ -201,7 +201,7 @@ run_standalone() {
   # or otherwise all lineages in Certbot's dir
   if [[ -v CERT_LINEAGES[@] ]]; then
     for lineage_name in "${!CERT_LINEAGES[@]}"; do
-      if [[ -r "${CERTBOT_DIR}/live/${lineage_name}" ]]; then
+      if [[ -r ${CERTBOT_DIR}/live/${lineage_name} ]]; then
         fetch_ocsp_response \
           "--standalone" \
           "${temp_output_dir}" \
@@ -261,12 +261,12 @@ check_for_existing_ocsp_staple_file() {
   # Validate and verify the existing local OCSP staple file
   local existing_ocsp_response
   set +e
-  existing_ocsp_response="$(openssl ocsp \
+  existing_ocsp_response=$(openssl ocsp \
     -no_nonce \
     -issuer "${lineage_dir}/chain.pem" \
     -cert "${lineage_dir}/cert.pem" \
     -verify_other "${lineage_dir}/chain.pem" \
-    -respin "${OUTPUT_DIR}/${lineage_name}.der" 2>&3)"
+    -respin "${OUTPUT_DIR}/${lineage_name}.der" 2>&3)
   local -r existing_ocsp_response_rc=${?}
   set -e
   readonly existing_ocsp_response
@@ -275,9 +275,9 @@ check_for_existing_ocsp_staple_file() {
 
   for existing_ocsp_response_line in ${existing_ocsp_response}; do
     if [[ ${existing_ocsp_response_line} =~ "This Update: "(.+) ]]; then
-      local -r this_update="${BASH_REMATCH[1]}"
+      local -r this_update=${BASH_REMATCH[1]}
     elif [[ ${existing_ocsp_response_line} =~ "Next Update: "(.+) ]]; then
-      local -r next_update="${BASH_REMATCH[1]}"
+      local -r next_update=${BASH_REMATCH[1]}
     fi
   done
   [[ -n ${this_update:-} && -n ${next_update:-} ]] || return 1
@@ -299,11 +299,11 @@ check_for_existing_ocsp_staple_file() {
 # $3 - Name of certificate lineage
 # $4 - OCSP endpoint (if specified on command line)
 fetch_ocsp_response() {
-  local -r temp_output_dir="${2}"
-  local -r lineage_name="${3}"
+  local -r temp_output_dir=${2}
+  local -r lineage_name=${3}
   case ${1} in
     --standalone)
-      local -r lineage_dir="${CERTBOT_DIR}/live/${lineage_name}"
+      local -r lineage_dir=${CERTBOT_DIR}/live/${lineage_name}
 
       if [[ ${FORCE_UPDATE:-} != "true" ]] &&
         check_for_existing_ocsp_staple_file; then
@@ -312,7 +312,7 @@ fetch_ocsp_response() {
       fi
       ;;
     --deploy_hook)
-      local -r lineage_dir="${RENEWED_LINEAGE}"
+      local -r lineage_dir=${RENEWED_LINEAGE}
       ;;
     *)
       return 1
@@ -327,40 +327,40 @@ fetch_ocsp_response() {
     -checkend 0 \
     -noout >&3 2>&1; then
 
-    ERROR_ENCOUNTERED="true"
+    ERROR_ENCOUNTERED=true
     lineages_processed["${lineage_name}"]="not updated"$'\t'"leaf certificate expired"
     return
   fi
 
   local ocsp_endpoint
   if [[ -n ${1:-} ]]; then
-    ocsp_endpoint="${1}"
+    ocsp_endpoint=${1}
   else
-    ocsp_endpoint="$(openssl x509 \
+    ocsp_endpoint=$(openssl x509 \
       -noout \
       -ocsp_uri \
       -in "${lineage_dir}/cert.pem" \
-      2>&3)"
+      2>&3)
   fi
 
   # Request, verify and temporarily save the actual OCSP response,
   # and check whether the certificate status is "good"
   local ocsp_call_output
   set +e
-  ocsp_call_output="$(openssl ocsp \
+  ocsp_call_output=$(openssl ocsp \
     -no_nonce \
     -url "${ocsp_endpoint}" \
     -issuer "${lineage_dir}/chain.pem" \
     -cert "${lineage_dir}/cert.pem" \
     -verify_other "${lineage_dir}/chain.pem" \
-    -respout "${temp_output_dir}/${lineage_name}.der" 2>&3)"
+    -respout "${temp_output_dir}/${lineage_name}.der" 2>&3)
   local -r ocsp_call_rc=${?}
   set -e
-  readonly ocsp_call_output="${ocsp_call_output#${lineage_dir}/cert.pem: }"
-  local -r cert_status="${ocsp_call_output%%$'\n'*}"
+  readonly ocsp_call_output=${ocsp_call_output#${lineage_dir}/cert.pem: }
+  local -r cert_status=${ocsp_call_output%%$'\n'*}
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
-    ERROR_ENCOUNTERED="true"
+    ERROR_ENCOUNTERED=true
     if (("${VERBOSITY}" >= 2)); then
       lineages_processed["${lineage_name}"]="not updated"$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
@@ -373,19 +373,19 @@ fetch_ocsp_response() {
   # folder
   mv "${temp_output_dir}/${lineage_name}.der" "${OUTPUT_DIR}/"
 
-  lineages_processed["${lineage_name}"]="updated"
+  lineages_processed["${lineage_name}"]=updated
 }
 
 print_and_handle_result() {
-  local header="LINEAGE"$'\t'"RESULT"$'\t'"REASON"
+  local header=LINEAGE$'\t'RESULT$'\t'REASON
 
   for lineage_name in "${!lineages_processed[@]}"; do
     local lineages_processed_formatted+=$'\n'"${lineage_name}"$'\t'"${lineages_processed["${lineage_name}"]}"
   done
   unset lineage_name
-  lineages_processed_formatted="$(sort <<<"${lineages_processed_formatted:-}")"
+  lineages_processed_formatted=$(sort <<<"${lineages_processed_formatted:-}")
   readonly lineages_processed_formatted
-  local output="${header}${lineages_processed_formatted:-}"
+  local output=${header}${lineages_processed_formatted:-}
 
   if [[ ${RELOAD_WEBSERVER:-} != "false" ]]; then
     reload_webserver
@@ -412,14 +412,14 @@ reload_webserver() {
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
         break
       else
-        ERROR_ENCOUNTERED="true"
+        ERROR_ENCOUNTERED=true
         local -r nginx_status=$'\n\n\t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
         break
       fi
     fi
   done
   unset lineage_name
-  readonly output+="${nginx_status:-}"
+  readonly output+=${nginx_status:-}
 }
 
 main() {
