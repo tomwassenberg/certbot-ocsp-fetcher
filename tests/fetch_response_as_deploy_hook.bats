@@ -7,7 +7,7 @@ load _test_helper
 
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid example" \
-    run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
+    run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
       --no-reload-webserver \
       --output-dir "${OUTPUT_DIR}"
 

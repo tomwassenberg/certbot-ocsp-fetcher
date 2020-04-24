@@ -38,7 +38,7 @@ For running the tests, [Bats] is also required.
 ## Usage
 Invoke the tool as follows:
 
-`# ./certbot-ocsp-fetcher.sh [-c/--certbot-dir DIRECTORY] [-f/--force-update]
+`# ./certbot-ocsp-fetcher [-c/--certbot-dir DIRECTORY] [-f/--force-update]
 [-h/--help] [-n/--cert-name CERT_NAME[,CERT_NAME...] [-u/--ocsp-responder
 OCSP_URL]] [-o/--output-dir DIRECTORY] [-q/--quiet] [-v/--verbose]
 [-w/--no-reload-webserver]`
@@ -58,7 +58,7 @@ should run the tool daily, for instance by one of the following options:
 - adding an entry for the tool to the user's crontab
 
 As mentioned above, you can use this tool as a deploy hook for Certbot. To do
-this, append `--deploy-hook "/path/to/certbot-ocsp-fetcher.sh"` to the Certbot
+this, append `--deploy-hook "/path/to/certbot-ocsp-fetcher"` to the Certbot
 command you currently use when requesting a certificate.
 
 **Note:** If an existing OCSP staple file is still valid for more than half of
@@ -98,7 +98,7 @@ tool:
   that were specified *directly* before this flag on the command line. This is
   required when the certificate in question does not use the AIA extension to
   include the OCSP responder of its issuer. For instance, you could invoke the
-  command as follows: `./certbot-ocsp-fetcher.sh --cert-name
+  command as follows: `./certbot-ocsp-fetcher --cert-name
   1.example.com,2.example.com --ocsp-responder ocsp.ca.example.com`
 
 - `-o, --output-dir`\

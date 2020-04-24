@@ -10,4 +10,4 @@ Type=oneshot
 
 User=root
 Group=root
-ExecStart=/usr/local/bin/certbot-ocsp-fetcher.sh
+ExecStart=/usr/local/bin/certbot-ocsp-fetcher

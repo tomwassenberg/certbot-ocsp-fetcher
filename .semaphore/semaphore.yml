@@ -30,7 +30,9 @@ blocks:
                   https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz)
                 shellcheck-stable/shellcheck"
 
-            - "\"${TMPDIR:-/tmp}/shellcheck\" --enable all ./*.sh"
+            - "(shopt -s nullglob &&
+              \"${TMPDIR:-/tmp}/shellcheck\" --enable all
+              ./certbot-ocsp-fetcher ./*.sh)"
 
             # We need to exclude SC2154 because of
             # https://github.com/koalaman/shellcheck/issues/1823

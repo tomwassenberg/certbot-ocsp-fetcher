@@ -10,7 +10,7 @@ load _test_helper
     "${OUTPUT_DIR}/valid example.der"
   PREV_RESPONSE_CHECKSUM="$(sha256sum "${OUTPUT_DIR}/valid example.der")"
 
-  run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher.sh" \
+  run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
     --certbot-dir "${CERTBOT_DIR}" \
     --output-dir "${OUTPUT_DIR}" \
