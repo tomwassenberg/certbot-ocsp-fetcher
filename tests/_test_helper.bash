@@ -88,7 +88,7 @@ fetch_sample_certs() {
       openssl x509 -inform DER \
         >"${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
 
-    if [[ ${multiple} == "true" ]]; then
+    if [[ ${multiple} == true ]]; then
       mv "${CERTBOT_DIR}/live/${lineage_name}/" "${CERTBOT_DIR}/live/${lineage_name} 1"
       cp -R "${CERTBOT_DIR}/live/${lineage_name} 1/" "${CERTBOT_DIR}/live/${lineage_name} 2"
       cp -R "${CERTBOT_DIR}/live/${lineage_name} 1/" "${CERTBOT_DIR}/live/${lineage_name} 3"

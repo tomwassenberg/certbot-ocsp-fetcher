@@ -307,7 +307,7 @@ fetch_ocsp_response() {
     --standalone)
       local -r lineage_dir=${CERTBOT_DIR}/live/${lineage_name}
 
-      if [[ ${FORCE_UPDATE:-} != "true" ]] &&
+      if [[ ${FORCE_UPDATE:-} != true ]] &&
         check_for_existing_ocsp_staple_file; then
         lineages_processed["${lineage_name}"]="not updated"$'\t'"valid staple file on disk"
         return
@@ -389,7 +389,7 @@ print_and_handle_result() {
   readonly lineages_processed_formatted
   local output=${header}${lineages_processed_formatted:-}
 
-  if [[ ${RELOAD_WEBSERVER:-} != "false" ]]; then
+  if [[ ${RELOAD_WEBSERVER:-} != false ]]; then
     reload_webserver
   fi
 
@@ -404,12 +404,12 @@ print_and_handle_result() {
     fi
   fi
 
-  [[ ${ERROR_ENCOUNTERED:-} != "true" ]]
+  [[ ${ERROR_ENCOUNTERED:-} != true ]]
 }
 
 reload_webserver() {
   for lineage_name in "${!lineages_processed[@]}"; do
-    if [[ ${lineages_processed["${lineage_name}"]} == "updated" ]]; then
+    if [[ ${lineages_processed["${lineage_name}"]} == updated ]]; then
       if service nginx reload >&3 2>&1; then
         local -r nginx_status=$'\n\n\t'"nginx reloaded"
         break
