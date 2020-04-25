@@ -27,6 +27,8 @@ parse_cli_arguments() {
     "[-w/--no-reload-webserver]"
   )
 
+  declare -gl ERROR_ENCOUNTERED
+
   declare -gi VERBOSITY=1
   local -r verbosity_error=(
     "error: -q/--quiet cannot be specified in conjunction with -v/--verbose."
@@ -48,7 +50,7 @@ parse_cli_arguments() {
         fi
         ;;
       -f | --force-update)
-        readonly FORCE_UPDATE=true
+        declare -glr FORCE_UPDATE=true
         shift
         ;;
       -h | --help)
