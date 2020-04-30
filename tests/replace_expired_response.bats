@@ -16,7 +16,7 @@ load _test_helper
     --output-dir "${OUTPUT_DIR}" \
     --cert-name "valid example"
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
   [[ -f "${OUTPUT_DIR}/valid example.der" ]]
   [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated$ ]]
 

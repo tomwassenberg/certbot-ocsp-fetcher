@@ -22,7 +22,7 @@ fetch_sample_certs() {
 
   local -A tls_handshakes lineages_host lineages_leaf
 
-  while [[ ${#} -gt 0 ]]; do
+  while ((${#} > 0)); do
     case ${1} in
       "valid example")
         lineages_host["${1}"]="mozilla-modern.badssl.com"

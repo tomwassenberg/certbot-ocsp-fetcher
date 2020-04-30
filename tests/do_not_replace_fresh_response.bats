@@ -11,7 +11,7 @@ load _test_helper
     --output-dir "${OUTPUT_DIR}" \
     --cert-name "valid example"
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
   [[ -f "${OUTPUT_DIR}/valid example.der" ]]
   chmod u-w "${OUTPUT_DIR}/valid example.der"
 
@@ -21,7 +21,7 @@ load _test_helper
     --output-dir "${OUTPUT_DIR}" \
     --cert-name "valid example"
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
   [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+"not updated"[[:blank:]]+"valid staple file on disk"$ ]]
   [[ -f "${OUTPUT_DIR}/valid example.der" ]]
 }

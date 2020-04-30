@@ -12,10 +12,10 @@ load _test_helper
     --cert-name "valid example 1,valid example 2" \
     --ocsp-responder http://ocsp.digicert.com
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
 
   for line in "${!lines[@]}"; do
-    if [[ ${line} == 0 ]]; then
+    if ((line == 0)); then
       [[ ${lines[${line}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
     else
       for lineage_name in "${CERTBOT_DIR}"/live/*; do

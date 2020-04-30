@@ -11,7 +11,7 @@ load _test_helper
       --no-reload-webserver \
       --output-dir "${OUTPUT_DIR}"
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
   [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated$ ]]
   [[ -f "${OUTPUT_DIR}/valid example.der" ]]
 }

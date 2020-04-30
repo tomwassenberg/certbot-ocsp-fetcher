@@ -8,7 +8,7 @@ load _test_helper
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
       --cert-name "example"
 
-  [[ ${status} != 0 ]]
+  ((status != 0))
   [[ ${lines[0]} =~ ^error: ]]
 
   RENEWED_DOMAINS=foo \
@@ -16,7 +16,7 @@ load _test_helper
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
       --certbot-dir "${CERTBOT_DIR}"
 
-  [[ ${status} != 0 ]]
+  ((status != 0))
   [[ ${lines[0]} =~ ^error: ]]
 
   RENEWED_DOMAINS=foo \
@@ -24,7 +24,7 @@ load _test_helper
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
       --force-update
 
-  [[ ${status} != 0 ]]
+  ((status != 0))
   [[ ${lines[0]} =~ ^error: ]]
 
   [[ ! -e "${OUTPUT_DIR}/valid example.der" ]]

@@ -11,7 +11,7 @@ load _test_helper
     --output-dir "${OUTPUT_DIR}" \
     --cert-name "revoked example"
 
-  [[ ${status} != 0 ]]
+  ((status != 0))
   [[ ${lines[1]} =~ ^"revoked example"[[:blank:]]+"not updated"[[:blank:]]+revoked$ ]]
   [[ ! -e "${OUTPUT_DIR}/revoked example.der" ]]
 }

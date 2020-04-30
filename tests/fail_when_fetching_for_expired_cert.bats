@@ -11,7 +11,7 @@ load _test_helper
     --output-dir "${OUTPUT_DIR}" \
     --cert-name "expired example"
 
-  [[ ${status} != 0 ]]
+  ((status != 0))
   [[ ${lines[1]} =~ ^"expired example"[[:blank:]]+"not updated"[[:blank:]]+"leaf certificate expired"$ ]]
   [[ ! -e "${OUTPUT_DIR}/expired example.der" ]]
 }

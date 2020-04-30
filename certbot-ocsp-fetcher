@@ -34,7 +34,7 @@ parse_cli_arguments() {
     "error: -q/--quiet cannot be specified in conjunction with -v/--verbose."
   )
 
-  while [[ ${#} -gt 0 ]]; do
+  while ((${#} > 0)); do
     local parameter=${1}
 
     case ${parameter} in
@@ -114,7 +114,7 @@ parse_cli_arguments() {
         fi
         ;;
       -q | --quiet)
-        if [[ ${VERBOSITY} != 1 ]]; then
+        if ((VERBOSITY != 1)); then
           exit_with_error "${verbosity_error[@]}"
         else
           readonly VERBOSITY=0
@@ -122,7 +122,7 @@ parse_cli_arguments() {
         fi
         ;;
       -v | --verbose)
-        if [[ ${VERBOSITY} == 0 ]]; then
+        if ((VERBOSITY == 0)); then
           exit_with_error "${verbosity_error[@]}"
         else
           VERBOSITY+=1
@@ -143,7 +143,7 @@ parse_cli_arguments() {
   # we call in the script is redirected to file descriptor 3.  Depending on the
   # desired verbosity, we redirect this file descriptor to either stderr or to
   # /dev/null.
-  if (("${VERBOSITY}" >= 2)); then
+  if ((VERBOSITY >= 2)); then
     exec 3>&2
   else
     exec 3>/dev/null
@@ -269,11 +269,11 @@ check_for_existing_ocsp_staple_file() {
     -cert "${lineage_dir}/cert.pem" \
     -verify_other "${lineage_dir}/chain.pem" \
     -respin "${OUTPUT_DIR}/${lineage_name}.der" 2>&3)
-  local -r existing_ocsp_response_rc=${?}
+  local -ir existing_ocsp_response_rc=${?}
   set -e
   readonly existing_ocsp_response
 
-  [[ ${existing_ocsp_response_rc} == 0 ]] || return 1
+  ((existing_ocsp_response_rc == 0)) || return 1
 
   for existing_ocsp_response_line in ${existing_ocsp_response}; do
     if [[ ${existing_ocsp_response_line} =~ "This Update: "(.+) ]]; then
@@ -356,7 +356,7 @@ fetch_ocsp_response() {
     -cert "${lineage_dir}/cert.pem" \
     -verify_other "${lineage_dir}/chain.pem" \
     -respout "${temp_output_dir}/${lineage_name}.der" 2>&3)
-  local -r ocsp_call_rc=${?}
+  local -ir ocsp_call_rc=${?}
   set -e
   readonly ocsp_call_output=${ocsp_call_output#${lineage_dir}/cert.pem: }
   local -r cert_status=${ocsp_call_output%%$'\n'*}
@@ -364,7 +364,7 @@ fetch_ocsp_response() {
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED=true
     lineages_processed["${lineage_name}"]="not updated"
-    if (("${VERBOSITY}" >= 2)); then
+    if ((VERBOSITY >= 2)); then
       lineages_processed["${lineage_name}"]+=$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
       lineages_processed["${lineage_name}"]+=$'\t'"${cert_status}"
@@ -394,7 +394,7 @@ print_and_handle_result() {
     reload_webserver
   fi
 
-  if (("${VERBOSITY}" >= 1)); then
+  if ((VERBOSITY >= 1)); then
     if command -v column >&-; then
       column -ents$'\t' <<<"${output}"
     else

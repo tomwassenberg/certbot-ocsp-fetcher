@@ -10,10 +10,10 @@ load _test_helper
     --certbot-dir "${CERTBOT_DIR}" \
     --output-dir "${OUTPUT_DIR}"
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
 
   for line in "${!lines[@]}"; do
-    if [[ ${line} == 0 ]]; then
+    if ((line == 0)); then
       [[ ${lines[${line}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
     else
       for lineage_name in "${CERTBOT_DIR}"/live/*; do

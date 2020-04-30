@@ -8,6 +8,6 @@ load _test_helper
     --certbot-dir "${CERTBOT_DIR}" \
     --output-dir "${OUTPUT_DIR}"
 
-  [[ ${status} == 0 ]]
+  ((status == 0))
   [[ ${output} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
 }
