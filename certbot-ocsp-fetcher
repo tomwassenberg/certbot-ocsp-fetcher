@@ -363,10 +363,11 @@ fetch_ocsp_response() {
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED=true
+    lineages_processed["${lineage_name}"]="not updated"
     if (("${VERBOSITY}" >= 2)); then
-      lineages_processed["${lineage_name}"]="not updated"$'\t'"${ocsp_call_output//[[:space:]]/ }"
+      lineages_processed["${lineage_name}"]+=$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
-      lineages_processed["${lineage_name}"]="not updated"$'\t'"${cert_status}"
+      lineages_processed["${lineage_name}"]+=$'\t'"${cert_status}"
     fi
     return
   fi
