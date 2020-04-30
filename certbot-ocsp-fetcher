@@ -324,13 +324,20 @@ fetch_ocsp_response() {
 
   # Verify that the leaf certificate is still valid. If the certificate is
   # expired, we don't have to request a (new) OCSP response.
-  if ! openssl x509 \
+  local cert_expiry_output
+  set +e
+  cert_expiry_output=$(openssl x509 \
     -in "${lineage_dir}/cert.pem" \
     -checkend 0 \
-    -noout >&3 2>&1; then
-
+    -noout 2>&3)
+  local -ri cert_expiry_rc=${?}
+  set -e
+  if ((cert_expiry_rc != 0)); then
     ERROR_ENCOUNTERED=true
-    lineages_processed["${lineage_name}"]="not updated"$'\t'"leaf certificate expired"
+    lineages_processed["${lineage_name}"]="not updated"
+    if [[ ${cert_expiry_output} == "Certificate will expire" ]]; then
+      lineages_processed["${lineage_name}"]+=$'\t'"leaf certificate expired"
+    fi
     return
   fi
 
