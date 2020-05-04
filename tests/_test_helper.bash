@@ -5,11 +5,11 @@ set \
 IFS=$'\n'
 
 setup() {
-  CERTBOT_DIR="$(mktemp --directory)"
+  CERTBOT_DIR=$(mktemp --directory)
   readonly CERTBOT_DIR
   mkdir -- "${CERTBOT_DIR}/live"
 
-  OUTPUT_DIR="$(mktemp --directory)"
+  OUTPUT_DIR=$(mktemp --directory)
   readonly -- OUTPUT_DIR
 }
 
@@ -70,14 +70,14 @@ fetch_sample_certs() {
 
     # Perform AIA fetching to retrieve the issuer's certificate
     local lineage_issuer_cert_url
-    lineage_issuer_cert_url="$(openssl \
+    lineage_issuer_cert_url=$(openssl \
       x509 \
       -text \
       <<<"${lineages_leaf["${lineage_name}"]}" |
       grep \
         --only-matching \
         --perl-regexp \
-        '(?<=CA Issuers - URI:).+')"
+        '(?<=CA Issuers - URI:).+')
     curl \
       --fail \
       --silent \
