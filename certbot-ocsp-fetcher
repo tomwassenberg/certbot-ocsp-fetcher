@@ -286,9 +286,6 @@ check_for_existing_ocsp_staple_file() {
 
   # Only continue fetching OCSP response if existing response expires within
   # half of its lifetime.
-  # Note: A non-zero return code of one of the `date` calls is not caught by
-  # Strict Mode, but this isn't critical, since it essentially skips the date
-  # check then and always fetches the OCSP response.
   local -ri response_lifetime_in_seconds=$((\
     $(date +%s --date "${next_update}") - $(date +%s --date "${this_update}")))
   (($(date +%s) < \
