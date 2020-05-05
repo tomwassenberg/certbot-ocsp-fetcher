@@ -40,10 +40,14 @@ parse_cli_arguments() {
     case ${parameter} in
       -c | --certbot-dir)
         if [[ -n ${2:-} && ! -v CERTBOT_DIR ]]; then
-          CERTBOT_DIR=$(realpath \
-            --canonicalize-missing \
-            --relative-base . \
-            -- "${2}")
+          CERTBOT_DIR=$(
+            realpath \
+              --canonicalize-missing \
+              --relative-base . \
+              -- "${2}"
+            echo x
+          )
+          CERTBOT_DIR=${CERTBOT_DIR%??}
           shift 2
         else
           exit_with_error "${usage[@]}"
@@ -103,10 +107,14 @@ parse_cli_arguments() {
         ;;
       -o | --output-dir)
         if [[ -n ${2:-} ]]; then
-          OUTPUT_DIR=$(realpath \
-            --canonicalize-missing \
-            --relative-base . \
-            -- "${2}")
+          OUTPUT_DIR=$(
+            realpath \
+              --canonicalize-missing \
+              --relative-base . \
+              -- "${2}"
+            echo x
+          )
+          OUTPUT_DIR=${OUTPUT_DIR%??}
           shift 2
           readonly OUTPUT_DIR
         else

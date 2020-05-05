@@ -4,13 +4,24 @@ set \
   -o pipefail
 IFS=$'\n'
 
+# Use folders with trailing newlines in them, to test that these are
+# handled properly as well. This employs a workaround, because trailing
+# newlines are always stripped in a command substitution.
 setup() {
-  CERTBOT_DIR=$(mktemp --directory)
+  CERTBOT_DIR=$(
+    mktemp --directory --suffix $'\n'
+    echo x
+  )
+  CERTBOT_DIR=${CERTBOT_DIR%??}
   readonly CERTBOT_DIR
   mkdir -- "${CERTBOT_DIR}/live"
 
-  OUTPUT_DIR=$(mktemp --directory)
-  readonly -- OUTPUT_DIR
+  OUTPUT_DIR=$(
+    mktemp --directory --suffix $'\n'
+    echo x
+  )
+  OUTPUT_DIR=${OUTPUT_DIR%??}
+  readonly OUTPUT_DIR
 }
 
 fetch_sample_certs() {
