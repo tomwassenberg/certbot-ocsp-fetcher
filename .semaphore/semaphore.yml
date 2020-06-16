@@ -14,10 +14,10 @@ global_job_config:
       - "checkout --use-cache"
 
 blocks:
-  - name: "ShellCheck"
+  - name: "Linting, formatting, tests"
     task:
       jobs:
-        - name: "Install and run ShellCheck"
+        - name: "Install ShellCheck and lint shell code"
           commands:
             - "tar
                 --extract
@@ -41,10 +41,7 @@ blocks:
             # https://github.com/koalaman/shellcheck/issues/1823
             - "\"${TMPDIR}/shellcheck\" --enable all --exclude 2154 tests/*.{bash,bats}"
 
-  - name: "shfmt"
-    task:
-      jobs:
-        - name: "Install and run shfmt"
+        - name: "Install shfmt and check shell code formatting"
           commands:
             - "curl
                 --fail
@@ -57,9 +54,6 @@ blocks:
 
             - "\"${TMPDIR}/shfmt\" -d -s ."
 
-  - name: "Bats"
-    task:
-      jobs:
         - name: "Install Bats and run tests"
           commands:
             - "sudo apt install bats"
