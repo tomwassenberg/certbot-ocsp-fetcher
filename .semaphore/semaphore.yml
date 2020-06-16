@@ -6,6 +6,9 @@ agent:
     os_image: "ubuntu1804"
 
 global_job_config:
+  env_vars:
+    - name: "TMPDIR"
+      value: "/tmp"
   prologue:
     commands:
       - "checkout --use-cache"
@@ -18,7 +21,7 @@ blocks:
           commands:
             - "tar
                 --extract
-                --directory \"${TMPDIR:-/tmp}\"
+                --directory \"${TMPDIR}\"
                 --strip-components 1
                 --xz
                 --file
@@ -31,12 +34,12 @@ blocks:
                 shellcheck-stable/shellcheck"
 
             - "(shopt -s nullglob &&
-              \"${TMPDIR:-/tmp}/shellcheck\" --enable all
+              \"${TMPDIR}/shellcheck\" --enable all
               ./certbot-ocsp-fetcher ./*.sh)"
 
             # We need to exclude SC2154 because of
             # https://github.com/koalaman/shellcheck/issues/1823
-            - "\"${TMPDIR:-/tmp}/shellcheck\" --enable all --exclude 2154 tests/*.{bash,bats}"
+            - "\"${TMPDIR}/shellcheck\" --enable all --exclude 2154 tests/*.{bash,bats}"
 
   - name: "shfmt"
     task:
@@ -49,10 +52,10 @@ blocks:
                 --silent
                 --show-error
                 https://github.com/mvdan/sh/releases/download/v3.1.0/shfmt_v3.1.0_linux_amd64 \
-              -o \"${TMPDIR:-/tmp}/shfmt\""
-            - "chmod +x \"${TMPDIR:-/tmp}/shfmt\""
+              -o \"${TMPDIR}/shfmt\""
+            - "chmod +x \"${TMPDIR}/shfmt\""
 
-            - "\"${TMPDIR:-/tmp}/shfmt\" -d -s ."
+            - "\"${TMPDIR}/shfmt\" -d -s ."
 
   - name: "Bats"
     task:
