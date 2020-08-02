@@ -85,7 +85,9 @@ parse_cli_arguments() {
         shift
         ;;
       -f | --force-update)
-        declare -glr FORCE_UPDATE=true
+        if [[ ! -v FORCE_UPDATE ]]; then
+          declare -glr FORCE_UPDATE=true
+        fi
         shift
         ;;
       -h | --help)
@@ -184,7 +186,9 @@ parse_cli_arguments() {
         fi
         ;;
       -w | --no-reload-webserver)
-        declare -glr RELOAD_WEBSERVER=false
+        if [[ ! -v RELOAD_WEBSERVER ]]; then
+          declare -glr RELOAD_WEBSERVER=false
+        fi
         shift
         ;;
       *)
