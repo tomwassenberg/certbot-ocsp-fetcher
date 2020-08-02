@@ -38,10 +38,7 @@ For running the tests, [Bats] is also required.
 ## Usage
 Invoke the tool as follows:
 
-`# ./certbot-ocsp-fetcher [-c/--certbot-dir DIRECTORY] [-f/--force-update]
-[-h/--help] [-n/--cert-name CERT_NAME[,CERT_NAME...] [-u/--ocsp-responder
-OCSP_URL]] [-o/--output-dir DIRECTORY] [-q/--quiet] [-v/--verbose]
-[-w/--no-reload-webserver]`
+`# ./certbot-ocsp-fetcher [OPTION]...`
 
 The filename of a resulting OCSP staple is the name of the certificate lineage
 (as used by Certbot) with the `der` extension appended. Be sure to point nginx
@@ -65,11 +62,11 @@ command you currently use when requesting a certificate.
 its lifetime, it will **not** be updated. If you need to override this
 behavior, use the`-f/--force-update` flag (see below).
 
-### Command line arguments
-This is a listing of all the command line arguments that can be passed to the
+### Command line options
+This is a listing of all the command line options that can be passed to the
 tool:
 
-- `-c, --certbot-dir`\
+- `-c DIRECTORY, --certbot-dir=DIRECTORY`\
   Specify the configuration directory of the Certbot instance that is used to
   process the certificates. When not specified, this defaults to
   `/etc/letsencrypt`.\
@@ -85,7 +82,7 @@ tool:
 - `-h, --help`\
   Print the correct usage of the tool.
 
-- `-n, --cert-name`\
+- `-n NAME, --cert-name=NAME`\
   Specify the name of the certificate lineage(s) (as used by Certbot) that you
   want to process. Express multiple lineages by delimiting these with a comma,
   or specify the flag multiple times. When not specified, the tool processes
@@ -93,7 +90,7 @@ tool:
   This flag cannot be used when the tool is invoked as a deploy hook by
   Certbot.
 
-- `-u/--ocsp-responder` \
+- `-u URL, --ocsp-responder=URL` \
   Specify the URL of the OCSP responder to query for the certificate lineage(s)
   that were specified *directly* before this flag on the command line. This is
   required when the certificate in question does not use the AIA extension to
@@ -101,7 +98,7 @@ tool:
   command as follows: `./certbot-ocsp-fetcher --cert-name
   1.example.com,2.example.com --ocsp-responder ocsp.ca.example.com`
 
-- `-o, --output-dir`\
+- `-o DIRECTORY, --output-dir=DIRECTORY`\
   Specify the directory where OCSP staple files are saved. When not specified,
   this defaults to the working directory.
 
@@ -114,7 +111,7 @@ tool:
   can be used for debugging purposes. Specify this flag multiple times for more
   verbosity.
 
-- `-w/--no-reload-webserver`\
+- `-w, --no-reload-webserver`\
   Do not reload `nginx`. When not specified and the tool created or updated at
   least one OCSP staple file, the tool will attempt to reload `nginx`.
 
