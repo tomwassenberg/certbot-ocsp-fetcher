@@ -19,6 +19,9 @@ load _test_helper
       [[ ${lines[${line}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
     else
       for lineage_name in "${CERTBOT_DIR}"/live/*; do
+        # Skip non-directories, like Certbot's README file
+        [[ -d ${lineage_name} ]] || continue
+
         [[ -f "${OUTPUT_DIR}/${lineage_name##*/}.der" ]]
 
         local -l cert_found=false

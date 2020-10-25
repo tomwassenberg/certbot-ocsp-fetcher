@@ -282,6 +282,10 @@ run_standalone() {
     shopt -s nullglob
     for lineage_dir in "${CERTBOT_DIR}"/live/*; do
       set -f
+
+      # Skip non-directories, like Certbot's README file
+      [[ -d ${lineage_dir} ]] || continue
+
       fetch_ocsp_response \
         "--standalone" "${temp_output_dir}" "${lineage_dir##*/}"
     done

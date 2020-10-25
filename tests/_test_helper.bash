@@ -15,6 +15,7 @@ setup() {
   CERTBOT_DIR=${CERTBOT_DIR%??}
   readonly CERTBOT_DIR
   mkdir -- "${CERTBOT_DIR}/live"
+  touch -- "${CERTBOT_DIR}/live/dummy_file"
 
   OUTPUT_DIR=$(
     mktemp --directory --suffix $'\n'
