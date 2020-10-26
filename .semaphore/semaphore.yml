@@ -12,10 +12,13 @@ global_job_config:
   prologue:
     commands:
       - "checkout --use-cache"
+      - "set -o nounset"
 
 blocks:
   - name: "Linting, formatting, tests"
     task:
+      secrets:
+        - name: "acme-account-staging"
       jobs:
         - name: "Install ShellCheck and lint shell code"
           commands:
@@ -54,7 +57,13 @@ blocks:
 
             - "\"${TMPDIR}/shfmt\" -d -s ."
 
-        - name: "Install Bats and run tests"
+        - name: "Install Certbot and run Bats tests"
+          env_vars:
+            - # Changing this requires updating the secrets configuration in
+              # Semaphore as well, because that needs to place the ACME account
+              # configuration at this location.
+              name: "CERTBOT_BASE_DIR"
+              value: "/tmp/letsencrypt"
           commands:
             - "sudo snap install --classic certbot"
 
@@ -62,5 +71,5 @@ blocks:
             # disable the man-db triggers.
             - "sudo sed -i '/man-db/d' /var/lib/dpkg/triggers/File"
 
-            - "sudo apt install bats"
+            - "sudo apt install --yes bats faketime"
             - "bats ./tests"

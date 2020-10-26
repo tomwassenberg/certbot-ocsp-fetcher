@@ -8,14 +8,19 @@ IFS=$'\n'
 # handled properly as well. This employs a workaround, because trailing
 # newlines are always stripped in a command substitution.
 setup() {
-  CERTBOT_DIR=$(
-    mktemp --directory --suffix $'\n'
-    echo x
-  )
-  CERTBOT_DIR=${CERTBOT_DIR%??}
-  readonly CERTBOT_DIR
-  mkdir -- "${CERTBOT_DIR}/live"
-  touch -- "${CERTBOT_DIR}/live/dummy_file"
+  if [[ ${CI:-} == true ]]; then
+    readonly CERTBOT_DIR=${CERTBOT_BASE_DIR:?}/conf
+    readonly CERTBOT_LOGS_DIR=${CERTBOT_BASE_DIR:?}/logs
+    readonly CERTBOT_WORK_DIR=${CERTBOT_BASE_DIR:?}/work
+  else
+    CERTBOT_DIR=$(
+      mktemp --directory --suffix $'\n'
+      echo x
+    )
+    CERTBOT_DIR=${CERTBOT_DIR%??}
+    readonly CERTBOT_DIR
+    [[ -d "${CERTBOT_DIR}/live" ]] || mkdir "${CERTBOT_DIR}/live"
+  fi
 
   OUTPUT_DIR=$(
     mktemp --directory --suffix $'\n'
@@ -31,15 +36,27 @@ fetch_sample_certs() {
   while ((${#} > 0)); do
     case ${1} in
       "valid example")
-        lineages_host["${1}"]="mozilla-modern.badssl.com"
+        if [[ ${CI:-} == true ]]; then
+          lineages_host["${1}"]="${CERT_DOMAIN_FOR_CI:?}"
+        else
+          lineages_host["${1}"]="mozilla-modern.badssl.com"
+        fi
         shift
         ;;
       "expired example")
-        lineages_host["${1}"]="expired.badssl.com"
+        if [[ ${CI:-} == true ]]; then
+          lineages_host["${1}"]="${CERT_DOMAIN_FOR_CI:?}"
+        else
+          lineages_host["${1}"]="expired.badssl.com"
+        fi
         shift
         ;;
       "revoked example")
-        lineages_host["${1}"]="revoked.badssl.com"
+        if [[ ${CI:-} == true ]]; then
+          lineages_host["${1}"]="${CERT_DOMAIN_FOR_CI:?}"
+        else
+          lineages_host["${1}"]="revoked.badssl.com"
+        fi
         shift
         ;;
       --multiple)
@@ -53,46 +70,70 @@ fetch_sample_certs() {
   done
 
   for lineage_name in "${!lineages_host[@]}"; do
-    local tls_handshake lineage_chain lineage_leaf
+    if [[ ${CI:-} == true ]]; then
+      certbot \
+        --config-dir "${CERTBOT_DIR}" \
+        --logs-dir "${CERTBOT_LOGS_DIR}" \
+        --work-dir "${CERTBOT_WORK_DIR}" \
+        certonly \
+        --non-interactive \
+        --staging \
+        --manual \
+        --preferred-challenges=http \
+        --manual-auth-hook /bin/true \
+        --domains "${lineages_host["${lineage_name}"]}" \
+        --cert-name "${lineage_name}"
+    else
+      local tls_handshake lineage_chain lineage_leaf
 
-    mkdir -- "${CERTBOT_DIR}/live/${lineage_name}"
+      mkdir -- "${CERTBOT_DIR}/live/${lineage_name}"
 
-    # Perform a TLS handshake
-    tls_handshake="$(openssl s_client \
-      -connect "${lineages_host["${lineage_name}"]}:443" \
-      -servername "${lineages_host["${lineage_name}"]}" \
-      -showcerts \
-      2>/dev/null \
-      </dev/null)"
+      # Perform a TLS handshake
+      tls_handshake="$(openssl s_client \
+        -connect "${lineages_host["${lineage_name}"]}:443" \
+        -servername "${lineages_host["${lineage_name}"]}" \
+        -showcerts \
+        2>/dev/null \
+        </dev/null)"
 
-    # Strip leading and trailing output, retaining only the certificate chain
-    # as printed by OpenSSL
-    lineage_chain="${tls_handshake#*-----BEGIN CERTIFICATE-----}"
-    lineage_chain="-----BEGIN CERTIFICATE-----${lineage_chain}"
-    lineage_chain="${lineage_chain%-----END CERTIFICATE-----*}"
-    lineage_chain="${lineage_chain}-----END CERTIFICATE-----"
+      # Strip leading and trailing output, retaining only the certificate chain
+      # as printed by OpenSSL
+      lineage_chain="${tls_handshake#*-----BEGIN CERTIFICATE-----}"
+      lineage_chain="-----BEGIN CERTIFICATE-----${lineage_chain}"
+      lineage_chain="${lineage_chain%-----END CERTIFICATE-----*}"
+      lineage_chain="${lineage_chain}-----END CERTIFICATE-----"
 
-    # Strip all certificates except the first, retaining only the leaf
-    # certificate as printed by OpenSSL
-    lineage_leaf="${lineage_chain/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
-    printf '%s\n' "${lineage_leaf}" > \
-      "${CERTBOT_DIR}/live/${lineage_name}/cert.pem"
+      # Strip all certificates except the first, retaining only the leaf
+      # certificate as printed by OpenSSL
+      lineage_leaf="${lineage_chain/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
+      printf '%s\n' "${lineage_leaf}" > \
+        "${CERTBOT_DIR}/live/${lineage_name}/cert.pem"
 
-    # Strip first (i.e. leaf) certificate from chain
-    lineage_chain="${lineage_chain#*-----END CERTIFICATE-----$'\n'}"
-    printf '%s\n' "${lineage_chain}" > \
-      "${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
+      # Strip first (i.e. leaf) certificate from chain
+      lineage_chain="${lineage_chain#*-----END CERTIFICATE-----$'\n'}"
+      printf '%s\n' "${lineage_chain}" > \
+        "${CERTBOT_DIR}/live/${lineage_name}/chain.pem"
 
-    if [[ ${multiple} == true ]]; then
-      mv "${CERTBOT_DIR}/live/${lineage_name}/" "${CERTBOT_DIR}/live/${lineage_name} 1"
-      cp -R "${CERTBOT_DIR}/live/${lineage_name} 1/" "${CERTBOT_DIR}/live/${lineage_name} 2"
-      cp -R "${CERTBOT_DIR}/live/${lineage_name} 1/" "${CERTBOT_DIR}/live/${lineage_name} 3"
+      unset tls_handshake lineage_chain lineage_leaf
     fi
-
-    unset tls_handshake lineage_chain lineage_leaf
   done
+
+  if [[ ${multiple:-} == true ]]; then
+    mv \
+      "${CERTBOT_DIR}/live/valid example/" \
+      "${CERTBOT_DIR}/live/valid example 1"
+    cp -R \
+      "${CERTBOT_DIR}/live/valid example 1/" \
+      "${CERTBOT_DIR}/live/valid example 2"
+    cp -R \
+      "${CERTBOT_DIR}/live/valid example 1/" \
+      "${CERTBOT_DIR}/live/valid example 3"
+  fi
+
+  # To test for the bug that was fixed in 87fbdcc.
+  touch -- "${CERTBOT_DIR}/live/dummy_file"
 }
 
 teardown() {
-  rm -rf -- "${CERTBOT_DIR}" "${OUTPUT_DIR}"
+  rm -fr -- "${CERTBOT_DIR}"/{archive,csr,live,keys,renewal} "${OUTPUT_DIR}"
 }
