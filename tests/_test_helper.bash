@@ -26,12 +26,6 @@ setup() {
 }
 
 fetch_sample_certs() {
-  if ! command -v curl >/dev/null; then
-    # shellcheck disable=2016
-    echo >&2 'This test expects `curl` to be available in $PATH.'
-    exit 1
-  fi
-
   local -A lineages_host
 
   while ((${#} > 0)); do
