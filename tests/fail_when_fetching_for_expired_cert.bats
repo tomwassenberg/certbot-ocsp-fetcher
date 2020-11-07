@@ -6,10 +6,10 @@ load _test_helper
   fetch_sample_certs "expired example"
 
   local -ar tool_command_line=(
-    "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher"
+    "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR}" \
-    --output-dir "${OUTPUT_DIR}" \
+    --certbot-dir "${CERTBOT_DIR:?}" \
+    --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "expired example"
   )
 
@@ -24,5 +24,5 @@ load _test_helper
 
   ((status != 0))
   [[ ${lines[1]} =~ ^"expired example"[[:blank:]]+"not updated"[[:blank:]]+"leaf certificate expired"$ ]]
-  [[ ! -e "${OUTPUT_DIR}/expired example.der" ]]
+  [[ ! -e "${OUTPUT_DIR:?}/expired example.der" ]]
 }

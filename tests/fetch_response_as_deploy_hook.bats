@@ -6,12 +6,12 @@ load _test_helper
   fetch_sample_certs "valid example"
 
   RENEWED_DOMAINS=foo \
-    RENEWED_LINEAGE="${CERTBOT_DIR}/live/valid example" \
-    run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
+    RENEWED_LINEAGE="${CERTBOT_DIR:?}/live/valid example" \
+    run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
       --no-reload-webserver \
-      --output-dir "${OUTPUT_DIR}"
+      --output-dir "${OUTPUT_DIR:?}"
 
   ((status == 0))
   [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated$ ]]
-  [[ -f "${OUTPUT_DIR}/valid example.der" ]]
+  [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
 }
