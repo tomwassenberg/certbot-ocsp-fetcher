@@ -5,7 +5,7 @@ load _test_helper
 @test "fetch OCSP responses for empty lineage directory" {
   run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR:?}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}"
 
   ((status == 0))

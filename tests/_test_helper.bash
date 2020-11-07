@@ -9,17 +9,18 @@ IFS=$'\n'
 # newlines are always stripped in a command substitution.
 setup() {
   if [[ ${CI:-} == true ]]; then
-    readonly CERTBOT_DIR=${CERTBOT_BASE_DIR:?}/conf
+    readonly CERTBOT_CONFIG_DIR=${CERTBOT_BASE_DIR:?}/conf
     readonly CERTBOT_LOGS_DIR=${CERTBOT_BASE_DIR:?}/logs
     readonly CERTBOT_WORK_DIR=${CERTBOT_BASE_DIR:?}/work
   else
-    CERTBOT_DIR=$(
+    CERTBOT_CONFIG_DIR=$(
       mktemp --directory --suffix $'\n'
       echo x
     )
-    CERTBOT_DIR=${CERTBOT_DIR%??}
-    readonly CERTBOT_DIR
-    [[ -d "${CERTBOT_DIR:?}/live" ]] || mkdir "${CERTBOT_DIR:?}/live"
+    CERTBOT_CONFIG_DIR=${CERTBOT_CONFIG_DIR%??}
+    readonly CERTBOT_CONFIG_DIR
+    [[ -d "${CERTBOT_CONFIG_DIR:?}/live" ]] ||
+      mkdir "${CERTBOT_CONFIG_DIR:?}/live"
   fi
 
   OUTPUT_DIR=$(
@@ -72,7 +73,7 @@ fetch_sample_certs() {
   for lineage_name in "${!lineages_host[@]}"; do
     if [[ ${CI:-} == true ]]; then
       certbot \
-        --config-dir "${CERTBOT_DIR:?}" \
+        --config-dir "${CERTBOT_CONFIG_DIR:?}" \
         --logs-dir "${CERTBOT_LOGS_DIR:?}" \
         --work-dir "${CERTBOT_WORK_DIR:?}" \
         certonly \
@@ -86,7 +87,7 @@ fetch_sample_certs() {
     else
       local tls_handshake lineage_chain lineage_leaf
 
-      mkdir -- "${CERTBOT_DIR:?}/live/${lineage_name:?}"
+      mkdir -- "${CERTBOT_CONFIG_DIR:?}/live/${lineage_name:?}"
 
       # Perform a TLS handshake
       tls_handshake="$(openssl s_client \
@@ -107,12 +108,12 @@ fetch_sample_certs() {
       # certificate as printed by OpenSSL
       lineage_leaf="${lineage_chain/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
       printf '%s\n' "${lineage_leaf:?}" > \
-        "${CERTBOT_DIR:?}/live/${lineage_name:?}/cert.pem"
+        "${CERTBOT_CONFIG_DIR:?}/live/${lineage_name:?}/cert.pem"
 
       # Strip first (i.e. leaf) certificate from chain
       lineage_chain="${lineage_chain#*-----END CERTIFICATE-----$'\n'}"
       printf '%s\n' "${lineage_chain:?}" > \
-        "${CERTBOT_DIR:?}/live/${lineage_name:?}/chain.pem"
+        "${CERTBOT_CONFIG_DIR:?}/live/${lineage_name:?}/chain.pem"
 
       unset tls_handshake lineage_chain lineage_leaf
     fi
@@ -120,20 +121,22 @@ fetch_sample_certs() {
 
   if [[ ${multiple:-} == true ]]; then
     mv \
-      "${CERTBOT_DIR:?}/live/valid example/" \
-      "${CERTBOT_DIR:?}/live/valid example 1"
+      "${CERTBOT_CONFIG_DIR:?}/live/valid example/" \
+      "${CERTBOT_CONFIG_DIR:?}/live/valid example 1"
     cp -R \
-      "${CERTBOT_DIR:?}/live/valid example 1/" \
-      "${CERTBOT_DIR:?}/live/valid example 2"
+      "${CERTBOT_CONFIG_DIR:?}/live/valid example 1/" \
+      "${CERTBOT_CONFIG_DIR:?}/live/valid example 2"
     cp -R \
-      "${CERTBOT_DIR:?}/live/valid example 1/" \
-      "${CERTBOT_DIR:?}/live/valid example 3"
+      "${CERTBOT_CONFIG_DIR:?}/live/valid example 1/" \
+      "${CERTBOT_CONFIG_DIR:?}/live/valid example 3"
   fi
 
   # To test for the bug that was fixed in 87fbdcc.
-  touch -- "${CERTBOT_DIR:?}/live/dummy_file"
+  touch -- "${CERTBOT_CONFIG_DIR:?}/live/dummy_file"
 }
 
 teardown() {
-  rm -fr -- "${CERTBOT_DIR:?}"/{archive,csr,live,keys,renewal} "${OUTPUT_DIR:?}"
+  rm -fr -- \
+    "${CERTBOT_CONFIG_DIR:?}"/{archive,csr,live,keys,renewal} \
+    "${OUTPUT_DIR:?}"
 }

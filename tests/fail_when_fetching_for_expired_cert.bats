@@ -8,7 +8,7 @@ load _test_helper
   local -ar tool_command_line=(
     "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR:?}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "expired example"
   )

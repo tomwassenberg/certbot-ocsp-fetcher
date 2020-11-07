@@ -7,7 +7,7 @@ load _test_helper
 
   run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR:?}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example"
 
@@ -16,7 +16,7 @@ load _test_helper
 
   run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR:?}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example" \
     --force-update

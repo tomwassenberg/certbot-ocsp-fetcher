@@ -7,7 +7,7 @@ load _test_helper
 
   if [[ ${CI:-} == true ]]; then
     certbot \
-      --config-dir "${CERTBOT_DIR:?}" \
+      --config-dir "${CERTBOT_CONFIG_DIR:?}" \
       --logs-dir "${CERTBOT_LOGS_DIR:?}" \
       --work-dir "${CERTBOT_WORK_DIR:?}" \
       revoke \
@@ -20,7 +20,7 @@ load _test_helper
 
   run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR:?}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "revoked example"
 

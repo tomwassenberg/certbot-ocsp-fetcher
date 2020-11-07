@@ -7,7 +7,7 @@ load _test_helper
 
   run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
     --no-reload-webserver \
-    --certbot-dir "${CERTBOT_DIR:?}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example 1,valid example 2" \
     --cert-name "valid example 3"
@@ -18,7 +18,7 @@ load _test_helper
     if ((line == 0)); then
       [[ ${lines[${line:?}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
     else
-      for lineage_name in "${CERTBOT_DIR:?}"/live/*; do
+      for lineage_name in "${CERTBOT_CONFIG_DIR:?}"/live/*; do
         # Skip non-directories, like Certbot's README file
         [[ -d ${lineage_name:?} ]] || continue
 
