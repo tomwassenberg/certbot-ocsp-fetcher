@@ -17,8 +17,7 @@ setup() {
       mktemp --directory --suffix $'\n'
       echo x
     )
-    CERTBOT_CONFIG_DIR=${CERTBOT_CONFIG_DIR%??}
-    readonly CERTBOT_CONFIG_DIR
+    readonly CERTBOT_CONFIG_DIR=${CERTBOT_CONFIG_DIR%??}
     [[ -d "${CERTBOT_CONFIG_DIR:?}/live" ]] ||
       mkdir "${CERTBOT_CONFIG_DIR:?}/live"
   fi
@@ -27,8 +26,7 @@ setup() {
     mktemp --directory --suffix $'\n'
     echo x
   )
-  OUTPUT_DIR=${OUTPUT_DIR%??}
-  readonly OUTPUT_DIR
+  readonly OUTPUT_DIR=${OUTPUT_DIR%??}
 }
 
 fetch_sample_certs() {
