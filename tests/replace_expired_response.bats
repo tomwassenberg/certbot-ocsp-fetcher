@@ -18,7 +18,7 @@ load _test_helper
 
   ((status == 0))
   [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
-  [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated$ ]]
+  [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
 
   CUR_RESPONSE_CHECKSUM=$(sha256sum "${OUTPUT_DIR:?}/valid example.der")
   [[ ${CUR_RESPONSE_CHECKSUM:?} != "${PREV_RESPONSE_CHECKSUM:?}" ]]

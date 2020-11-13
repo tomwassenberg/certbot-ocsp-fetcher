@@ -31,7 +31,7 @@ load _test_helper
         [[ -f "${OUTPUT_DIR:?}/${lineage_name##*/}.der" ]]
 
         local -l cert_found=false
-        if [[ ${lines[${line:?}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated$ ]]
+        if [[ ${lines[${line:?}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
         then
           cert_found=true
           break

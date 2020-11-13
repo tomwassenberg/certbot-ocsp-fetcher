@@ -464,11 +464,11 @@ print_and_handle_result() {
 
   if ((VERBOSITY >= 1)); then
     if command -v column >&-; then
-      column -ents$'\t' <<<"${output}"
+      column -ts$'\t' <<<"${output}"
     else
+      # shellcheck disable=2016
       echo >&2 \
-        'Install BSD "column" for properly formatted output. On Ubuntu,' \
-        'this can be done by installing the "bsdmainutils" package.'$'\n'
+        'Install the BSD utility `column` for properly formatted output.'$'\n'
       echo "${output}"
     fi
   fi
@@ -480,13 +480,14 @@ reload_webserver() {
   for lineage_name in "${!lineages_processed[@]}"; do
     if [[ ${lineages_processed["${lineage_name}"]} == updated ]]; then
       if service nginx reload >&3 2>&1; then
-        local -r nginx_status=$'\n\n\t'"nginx reloaded"
-        break
+        # The last line includes a leading space, to workaround the lack of the
+        # `-n` flag in later versions of `column`.
+        local -r nginx_status=$'\n\n \t'"nginx reloaded"
       else
         ERROR_ENCOUNTERED=true
-        local -r nginx_status=$'\n\n\t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
-        break
+        local -r nginx_status=$'\n\n \t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
       fi
+      break
     fi
   done
   unset lineage_name

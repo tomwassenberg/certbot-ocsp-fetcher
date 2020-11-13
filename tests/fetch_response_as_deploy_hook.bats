@@ -12,6 +12,6 @@ load _test_helper
       --output-dir "${OUTPUT_DIR:?}"
 
   ((status == 0))
-  [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated$ ]]
+  [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
   [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
 }
