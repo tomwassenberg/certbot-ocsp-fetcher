@@ -3,7 +3,7 @@
 load _test_helper
 
 @test "fail when fetching OCSP response for revoked certificate" {
-  fetch_sample_certs "revoked example"
+  fetch_sample_certs "revoked example" "valid example"
 
   if [[ ${CI:-} == true ]]; then
     certbot \
@@ -22,9 +22,11 @@ load _test_helper
     --no-reload-webserver \
     --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
-    --cert-name "revoked example"
+    --cert-name "revoked example" \
+    --cert-name "valid example"
 
   ((status != 0))
   [[ ${lines[1]} =~ ^"revoked example"[[:blank:]]+"not updated"[[:blank:]]+revoked$ ]]
-  [[ ! -e "${OUTPUT_DIR:?}/revoked example.der" ]]
+  [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+  [[ ! -e "${OUTPUT_DIR:?}/revoked example.der" && -e "${OUTPUT_DIR:?}/valid example.der" ]]
 }
