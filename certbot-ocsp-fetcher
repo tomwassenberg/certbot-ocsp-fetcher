@@ -256,7 +256,8 @@ start_in_correct_mode() {
 run_standalone() {
   readonly CERTBOT_DIR=${CERTBOT_DIR:-/etc/letsencrypt}
 
-  if [[ -d ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live ]]; then
+  if [[ ! -r ${CERTBOT_DIR} || (-d \
+    ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live) ]]; then
     exit_with_error \
       "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live"
   fi
