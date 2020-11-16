@@ -1,7 +1,6 @@
 *.swp
 
-*.pem
 *.crt
-*.key
 *.der
-!tests/examples/ocsp_response_expired.der
+*.key
+*.pem
