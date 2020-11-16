@@ -342,9 +342,11 @@ check_for_existing_ocsp_staple_file() {
   ((existing_ocsp_response_rc == 0)) || return 1
 
   for existing_ocsp_response_line in ${existing_ocsp_response}; do
-    if [[ ${existing_ocsp_response_line} =~ "This Update: "(.+) ]]; then
+    if [[ ${existing_ocsp_response_line} =~ \
+      ^[[:blank:]]*"This Update: "(.+)$ ]]; then
       local -r this_update=${BASH_REMATCH[1]}
-    elif [[ ${existing_ocsp_response_line} =~ "Next Update: "(.+) ]]; then
+    elif [[ ${existing_ocsp_response_line} =~ \
+      ^[[:blank:]]*"Next Update: "(.+)$ ]]; then
       local -r next_update=${BASH_REMATCH[1]}
     fi
   done
