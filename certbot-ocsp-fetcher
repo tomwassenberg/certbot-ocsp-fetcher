@@ -248,6 +248,8 @@ start_in_correct_mode() {
     run_as_deploy_hook
   fi
 
+  rmdir -- "${temp_output_dir}"
+
   print_and_handle_result
 }
 
@@ -435,12 +437,15 @@ fetch_ocsp_response() {
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED=true
+    rm -- "${temp_output_dir}/${lineage_name}.der"
+
     lineages_processed["${lineage_name}"]="not updated"
     if ((VERBOSITY >= 2)); then
       lineages_processed["${lineage_name}"]+=$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
       lineages_processed["${lineage_name}"]+=$'\t'"${cert_status}"
     fi
+
     return
   fi
 
