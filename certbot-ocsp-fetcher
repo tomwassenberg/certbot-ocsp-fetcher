@@ -71,12 +71,8 @@ parse_cli_arguments() {
         if [[ ${parameter} =~ --certbot-dir=(.+) ]]; then
           CERTBOT_DIR=${BASH_REMATCH[1]}
         else
-          if [[ -n ${2:-} ]]; then
-            CERTBOT_DIR=${2}
-            shift
-          else
-            exit_with_error "${usage[@]}"
-          fi
+          CERTBOT_DIR=${2:? exit_with_error "${usage[@]}"}
+          shift
         fi
 
         CERTBOT_DIR=$(
@@ -102,15 +98,11 @@ parse_cli_arguments() {
       -n | --cert-name | --cert-name=?*)
         if [[ ${parameter} =~ --cert-name=(.+) ]]; then
           local cert_lineages_value=${BASH_REMATCH[1]}
-          shift
         else
-          if [[ -n ${2:-} ]]; then
-            local cert_lineages_value=${2}
-            shift 2
-          else
-            exit_with_error "${usage[@]}"
-          fi
+          local cert_lineages_value=${2:? exit_with_error "${usage[@]}"}
+          shift
         fi
+        shift
 
         # Loop over any lineages passed in the same value of --cert-name.
         OLDIFS=${IFS}
@@ -120,15 +112,11 @@ parse_cli_arguments() {
         # lineages.
         case ${1:-} in
           -u | --ocsp-responder)
-            if [[ -n ${2:-} ]]; then
-              for lineage_name in ${cert_lineages_value}; do
-                CERT_LINEAGES["${lineage_name}"]=${2}
-              done
-              shift
-            else
-              exit_with_error "${usage[@]}"
-            fi
-            shift
+            for lineage_name in ${cert_lineages_value}; do
+              CERT_LINEAGES["${lineage_name}"]=${2:? exit_with_error
+"${usage[@]}"}
+            done
+            shift 2
             ;;
           --ocsp-responder=?*)
             [[ ${1} =~ --ocsp-responder=(.+) ]]
@@ -156,12 +144,8 @@ parse_cli_arguments() {
         if [[ ${parameter} =~ --output-dir=(.+) ]]; then
           OUTPUT_DIR=${BASH_REMATCH[1]}
         else
-          if [[ -n ${2:-} ]]; then
-            OUTPUT_DIR=${2}
-            shift
-          else
-            exit_with_error "${usage[@]}"
-          fi
+          OUTPUT_DIR=${2:? exit_with_error "${usage[@]}"}
+          shift
         fi
 
         OUTPUT_DIR=$(
