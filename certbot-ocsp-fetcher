@@ -393,7 +393,7 @@ fetch_ocsp_response() {
   fi
 
   local ocsp_endpoint
-  if [[ -n ${1:-} ]]; then
+  if [[ -n ${1-} ]]; then
     ocsp_endpoint=${1}
   else
     ocsp_endpoint=$(openssl x509 \
