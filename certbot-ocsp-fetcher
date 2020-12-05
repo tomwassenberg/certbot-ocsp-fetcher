@@ -441,14 +441,14 @@ fetch_ocsp_response() {
 }
 
 print_and_handle_result() {
-  local header=LINEAGE$'\t'RESULT$'\t'REASON
+  local -r header=LINEAGE$'\t'RESULT$'\t'REASON
 
   for lineage_name in "${!lineages_processed[@]}"; do
     local lineages_processed_formatted+=$'\n'"${lineage_name}"$'\t'"${lineages_processed["${lineage_name}"]}"
   done
   unset lineage_name
   readonly lineages_processed_formatted=$(sort <<<"${lineages_processed_formatted:-}")
-  local output=${header}${lineages_processed_formatted:-}
+  local -r output=${header}${lineages_processed_formatted:-}
 
   if [[ ${RELOAD_WEBSERVER:-} != false ]]; then
     reload_webserver
