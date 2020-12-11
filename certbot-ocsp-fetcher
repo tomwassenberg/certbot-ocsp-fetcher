@@ -464,11 +464,12 @@ print_and_handle_result() {
   done
   unset lineage_name
   readonly lineages_processed_formatted=$(sort <<<"${lineages_processed_formatted:-}")
-  local -r output=${header}${lineages_processed_formatted:-}
 
   if [[ ${RELOAD_WEBSERVER:-} != false ]]; then
     reload_webserver
   fi
+
+  local -r output=${header}${lineages_processed_formatted:-}${nginx_status-}
 
   if ((VERBOSITY >= 1)); then
     if command -v column >&-; then
@@ -499,7 +500,6 @@ reload_webserver() {
     fi
   done
   unset lineage_name
-  readonly output+=${nginx_status:-}
 }
 
 main() {
