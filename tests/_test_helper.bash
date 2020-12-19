@@ -134,7 +134,11 @@ fetch_sample_certs() {
 }
 
 teardown() {
-  rm -fr -- \
-    "${CERTBOT_CONFIG_DIR:?}"/{archive,csr,live,keys,renewal} \
-    "${OUTPUT_DIR:?}"
+  if [[ ${CI:-} == true ]]; then
+    rm -r -- "${CERTBOT_CONFIG_DIR:?}"/{archive,csr,live,keys,renewal}
+  else
+    rm -r -- "${CERTBOT_CONFIG_DIR:?}"
+  fi
+
+  rm -fr -- "${OUTPUT_DIR:?}"
 }
