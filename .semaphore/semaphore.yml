@@ -9,55 +9,14 @@ global_job_config:
   env_vars:
     - name: "TMPDIR"
       value: "/tmp"
-  prologue:
-    commands:
-      - "checkout --use-cache"
-      - "set -o nounset"
 
 blocks:
-  - name: "Linting, formatting, tests"
+  - name: "Lint code, check formatting and run tests"
     task:
       secrets:
         - name: "acme-account-staging"
       jobs:
-        - name: "Install ShellCheck and lint shell code"
-          commands:
-            - "tar
-                --extract
-                --directory \"${TMPDIR}\"
-                --strip-components 1
-                --xz
-                --file
-                <(curl
-                  --fail
-                  --location
-                  --silent
-                  --show-error
-                  https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz)
-                shellcheck-stable/shellcheck"
-
-            - "(shopt -s nullglob &&
-              \"${TMPDIR}/shellcheck\" --enable all
-              ./certbot-ocsp-fetcher ./*.sh)"
-
-            # We need to exclude SC2154 because of
-            # https://github.com/koalaman/shellcheck/issues/1823
-            - "\"${TMPDIR}/shellcheck\" --enable all --exclude 2154 tests/*.{bash,bats}"
-
-        - name: "Install shfmt and check shell code formatting"
-          commands:
-            - "curl
-                --fail
-                --location
-                --silent
-                --show-error
-                https://github.com/mvdan/sh/releases/download/v3.1.2/shfmt_v3.1.2_linux_amd64 \
-              -o \"${TMPDIR}/shfmt\""
-            - "chmod +x \"${TMPDIR}/shfmt\""
-
-            - "\"${TMPDIR}/shfmt\" -d -s ."
-
-        - name: "Install Certbot and run Bats tests"
+        - name: "Lint code, check formatting and run tests"
           env_vars:
             - # Changing this requires updating the secrets configuration in
               # Semaphore as well, because that needs to place the ACME account
@@ -65,11 +24,40 @@ blocks:
               name: "CERTBOT_BASE_DIR"
               value: "/tmp/letsencrypt"
           commands:
+            # Install ShellCheck
+            - "curl
+                --fail
+                --location
+                --silent
+                --show-error
+                https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz |
+              sudo tar
+                --extract
+                --directory /usr/local/bin
+                --strip-components 1
+                --xz
+                shellcheck-stable/shellcheck"
+
+            # Install shfmt
+            - "sudo curl
+                --fail
+                --location
+                --silent
+                --show-error
+                https://github.com/mvdan/sh/releases/download/v3.1.2/shfmt_v3.1.2_linux_amd64 \
+              -o /usr/local/bin/shfmt"
+            - "sudo chmod +x /usr/local/bin/shfmt"
+
+            # Install Certbot
             - "sudo snap install --classic certbot"
 
+            # Install Bats
+            #
             # Updating the man-db makes the Bats install take longer, so
             # disable the man-db triggers.
             - "sudo sed -i '/man-db/d' /var/lib/dpkg/triggers/File"
-
             - "sudo apt install --yes bats faketime"
-            - "bats ./tests"
+
+            # Lint code, check formatting and run tests
+            - "checkout --use-cache"
+            - "source ./hooks.bash"
