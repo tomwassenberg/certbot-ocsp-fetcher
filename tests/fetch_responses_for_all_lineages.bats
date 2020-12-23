@@ -30,7 +30,7 @@ load _test_helper
         fi
       done
 
-      [[ ${cert_found:?} == true ]]
+      [[ ${cert_found:?} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
       unset cert_found
     fi
   done

@@ -16,7 +16,8 @@ load _test_helper
     --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
     --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example 1,valid example 2" \
-    --ocsp-responder "${ocsp_responder:?}"
+    --ocsp-responder "${ocsp_responder:?}" \
+    --cert-name "valid example 3"
 
   ((status == 0))
 
@@ -38,7 +39,8 @@ load _test_helper
         fi
       done
 
-      [[ ${cert_found:?} == true ]]
+      [[ ${cert_found:?} == true ]] ||
+        (( line == -2 || line == -1 )) && ! { command -v column >&-; }
       unset cert_found
     fi
   done
