@@ -474,13 +474,17 @@ print_and_handle_result() {
       readonly output
     else
       # shellcheck disable=2016
-      echo >&2 \
-        'Install the BSD utility `column` for properly formatted output.'$'\n'
+      local -r column_error=($'\n'
+        'Install the BSD utility `column` '
+        'for properly formatted output.'
+        $'\n'
+      )
     fi
     # Extract header to direct it to stderr
     printf '%s\n' "${output%%$'\n'*}" >&2
     # Remove header before printing everything else to stdout
-    [[ -v lineages_processed[@] ]] && printf '%s\n' "${output#*$'\n'}"
+    [[ -n ${lineages_processed[*]} ]] && printf '%s\n' "${output#*$'\n'}"
+    printf %s "${column_error[@]-}" >&2
   fi
 
   [[ ${ERROR_ENCOUNTERED:-} != true ]]

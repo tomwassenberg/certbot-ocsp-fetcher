@@ -28,7 +28,9 @@ load _test_helper
         fi
       done
 
-      [[ ${cert_found:?} == true ]]
+      # Skip lines that consist of the warning that's printed when formatting
+      # dependency is not present on system.
+      [[ ${cert_found:?} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
       unset cert_found
     fi
   done
