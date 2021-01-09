@@ -14,26 +14,26 @@ load _test_helper
 
   ((status == 0))
 
-  for line in "${!lines[@]}"; do
-    if ((line == 0)); then
-      [[ ${lines[${line:?}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
-    else
-      for lineage_name in "${CERTBOT_CONFIG_DIR:?}"/live/*; do
-        # Skip non-directories, like Certbot's README file
-        [[ -d ${lineage_name:?} ]] || continue
+  for lineage_name in "${CERTBOT_CONFIG_DIR:?}"/live/*; do
+    # Skip non-directories, like Certbot's README file
+    [[ -d ${lineage_name:?} ]] || continue
 
-        [[ -f "${OUTPUT_DIR:?}/${lineage_name##*/}.der" ]]
+    [[ -f "${OUTPUT_DIR:?}/${lineage_name##*/}.der" ]]
 
+    for line in "${!lines[@]}"; do
+      if ((line == 0)); then
+        [[ ${lines[${line:?}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
+      else
         local -l cert_found=false
         if [[ ${lines[${line:?}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
         then
           cert_found=true
           break
         fi
-      done
+      fi
+    done
 
-      [[ ${cert_found:?} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
-      unset cert_found
-    fi
+    [[ ${cert_found:?} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
+    unset cert_found
   done
 }
