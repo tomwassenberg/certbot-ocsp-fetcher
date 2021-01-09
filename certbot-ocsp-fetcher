@@ -227,7 +227,7 @@ prepare_output_dir() {
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then
     exit_with_error \
-      "error:"$'\t\t'"no write access to output directory (\"${OUTPUT_DIR}\")"
+      error:$'\t\t'"no write access to output directory (\"${OUTPUT_DIR}\")"
   fi
 }
 
@@ -259,7 +259,7 @@ run_standalone() {
   if [[ ! -r ${CERTBOT_DIR} || (-d \
     ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live) ]]; then
     exit_with_error \
-      "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live"
+      error:$'\t\t'"can't access ${CERTBOT_DIR}/live"
   fi
 
   # Check specific lineage if passed on CLI,
@@ -300,7 +300,7 @@ run_as_deploy_hook() {
     # The directory is already inferred from the environment variable that
     # Certbot passes
     exit_with_error \
-      "error:"$'\t\t'"-c/--certbot-dir cannot be passed" \
+      error:$'\t\t'"-c/--certbot-dir cannot be passed" \
       "when run as Certbot hook"
   fi
 
@@ -308,7 +308,7 @@ run_as_deploy_hook() {
     # When run as deploy hook the behavior of this flag is used by default.
     # Therefore passing this flag would not have any effect.
     exit_with_error \
-      "error:"$'\t\t'"-f/--force-update cannot be passed" \
+      error:$'\t\t'"-f/--force-update cannot be passed" \
       "when run as Certbot hook"
   fi
 
@@ -316,11 +316,11 @@ run_as_deploy_hook() {
     # The certificate lineage is already inferred from the environment
     # variable that Certbot passes
     exit_with_error \
-      "error:"$'\t\t'"-n/--cert-name cannot be passed when run as Certbot hook"
+      error:$'\t\t'"-n/--cert-name cannot be passed when run as Certbot hook"
   fi
 
   fetch_ocsp_response \
-    "--deploy_hook" "${temp_output_dir}" "${RENEWED_LINEAGE##*/}"
+    --deploy_hook "${temp_output_dir}" "${RENEWED_LINEAGE##*/}"
 }
 
 # Check if it's necessary to fetch a new OCSP response
