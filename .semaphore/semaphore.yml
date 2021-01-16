@@ -56,7 +56,7 @@ blocks:
             # Updating the man-db makes the Bats install take longer, so
             # disable the man-db triggers.
             - "sudo sed -i '/man-db/d' /var/lib/dpkg/triggers/File"
-            - "sudo apt install --yes bats faketime"
+            - "install-package bats faketime"
 
             # Lint code, check formatting and run tests
             - "checkout --use-cache"
