@@ -50,7 +50,7 @@ parse_cli_arguments() {
 
   declare -gl ERROR_ENCOUNTERED
 
-  declare -gi VERBOSITY=1
+  declare -gi VERBOSITY=${VERBOSITY:-1}
   local -r verbosity_error=(
     "error: -q/--quiet cannot be specified in conjunction with -v/--verbose."
   )
@@ -200,6 +200,14 @@ parse_cli_arguments() {
         ;;
     esac
   done
+
+  # Respect the common "DEBUG" environment variable if set, unless the --quiet
+  # or --verbose flag has been passed as well.
+  if ((${DEBUG:-0} >= 1)) && ((VERBOSITY == 1)); then
+    # We set VERBOSITY to 0 in case of --quiet, so use the value of $DEBUG
+    # incremented with 1 to match it with $VERBOSITY.
+    VERBOSITY=$((DEBUG + 1))
+  fi
 
   # When not parsed, the stdout and/or stderr output of all external commands
   # we call in the script is redirected to file descriptor 3.  Depending on the
