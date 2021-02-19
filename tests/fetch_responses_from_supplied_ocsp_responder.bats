@@ -6,7 +6,7 @@ load _test_helper
   fetch_sample_certs --multiple "valid example"
 
   if [[ ${CI:-} == true ]]; then
-      local ocsp_responder=http://ocsp.stg-int-x1.letsencrypt.org
+      local ocsp_responder=http://stg-r3.o.lencr.org
   else
       local ocsp_responder=http://ocsp.digicert.com
   fi
