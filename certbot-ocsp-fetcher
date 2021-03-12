@@ -485,7 +485,7 @@ print_and_handle_result() {
 reload_webserver() {
   for lineage_name in "${!lineages_processed[@]}"; do
     if [[ ${lineages_processed["${lineage_name}"]} == updated ]]; then
-      if service nginx reload >&3 2>&1; then
+      if nginx -s reload >&3 2>&1; then
         # The last line includes a leading space, to workaround the lack of the
         # `-n` flag in later versions of `column`.
         local -r nginx_status=$'\n\n \t'"nginx reloaded"
