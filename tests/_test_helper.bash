@@ -8,10 +8,23 @@ IFS=$'\n'
 # handled properly as well. This employs a workaround, because trailing
 # newlines are always stripped in a command substitution.
 setup() {
+  OUTPUT_DIR=$(
+    mktemp --directory --suffix $'\n'
+    echo x
+  )
+  readonly OUTPUT_DIR=${OUTPUT_DIR%??}
+
+  TOOL_COMMAND_LINE=(
+    "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher"
+    --output-dir "${OUTPUT_DIR:?}"
+  )
+
   if [[ ${CI:-} == true ]]; then
     readonly CERTBOT_CONFIG_DIR=${CERTBOT_BASE_DIR:?}/conf
     readonly CERTBOT_LOGS_DIR=${CERTBOT_BASE_DIR:?}/logs
     readonly CERTBOT_WORK_DIR=${CERTBOT_BASE_DIR:?}/work
+
+    readonly TOOL_COMMAND_LINE
   else
     CERTBOT_CONFIG_DIR=$(
       mktemp --directory --suffix $'\n'
@@ -20,13 +33,9 @@ setup() {
     readonly CERTBOT_CONFIG_DIR=${CERTBOT_CONFIG_DIR%??}
     [[ -d "${CERTBOT_CONFIG_DIR:?}/live" ]] ||
       mkdir "${CERTBOT_CONFIG_DIR:?}/live"
-  fi
 
-  OUTPUT_DIR=$(
-    mktemp --directory --suffix $'\n'
-    echo x
-  )
-  readonly OUTPUT_DIR=${OUTPUT_DIR%??}
+    readonly TOOL_COMMAND_LINE+=(--no-reload-webserver)
+  fi
 }
 
 fetch_sample_certs() {

@@ -5,19 +5,15 @@ load _test_helper
 @test "do not replace fresh OCSP response when not forced" {
   fetch_sample_certs "valid example"
 
-  "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
-    --no-reload-webserver \
+  "${TOOL_COMMAND_LINE[@]:?}" \
     --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
-    --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example"
 
   [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
   chmod u-w "${OUTPUT_DIR:?}/valid example.der"
 
-  run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
-    --no-reload-webserver \
+  run "${TOOL_COMMAND_LINE[@]:?}" \
     --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
-    --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example"
 
   ((status == 0))

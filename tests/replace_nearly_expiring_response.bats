@@ -5,10 +5,8 @@ load _test_helper
 @test "replace nearly-expiring OCSP response" {
   fetch_sample_certs "valid example"
 
-  run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
-    --no-reload-webserver \
+  run "${TOOL_COMMAND_LINE[@]:?}" \
     --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
-    --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "valid example"
 
   ((status == 0))
@@ -33,10 +31,8 @@ load _test_helper
   #    response wouldn't have reached its halftime yet.
   run faketime \
     -f "+3.5 days" \
-    "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
-      --no-reload-webserver \
+    "${TOOL_COMMAND_LINE[@]:?}" \
       --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
-      --output-dir "${OUTPUT_DIR:?}" \
       --cert-name "valid example"
 
   ((status == 0))

@@ -4,10 +4,8 @@ load _test_helper
 
 @test "fail when fetching OCSP response for expired certificate" {
   local -ar tool_command_line=(
-    "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
-    --no-reload-webserver \
-    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
-    --output-dir "${OUTPUT_DIR:?}"
+    "${TOOL_COMMAND_LINE[@]:?}"
+    --certbot-dir "${CERTBOT_CONFIG_DIR:?}"
   )
 
   if [[ ${CI:-} == true ]]; then
