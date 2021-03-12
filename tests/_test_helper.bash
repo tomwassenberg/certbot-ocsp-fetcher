@@ -31,10 +31,20 @@ setup() {
   )
   readonly OUTPUT_DIR=${OUTPUT_DIR%??}
 
+  TOOL_COMMAND_LINE=(
+    "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher"
+    --output-dir "${OUTPUT_DIR:?}"
+  )
+
   if [[ ${CI:-} == true ]]; then
     ln --symbolic "${CERTBOT_ACCOUNTS_DIR:?}/" "${CERTBOT_CONFIG_DIR:?}"
+
+    readonly TOOL_COMMAND_LINE
+    service nginx start
   else
     mkdir "${CERTBOT_CONFIG_DIR:?}/live"
+
+    readonly TOOL_COMMAND_LINE+=(--no-reload-webserver)
   fi
 }
 

@@ -18,10 +18,8 @@ load _test_helper
       --cert-name "revoked example"
   fi
 
-  run "${BATS_TEST_DIRNAME:?}/../certbot-ocsp-fetcher" \
-    --no-reload-webserver \
+  run "${TOOL_COMMAND_LINE[@]:?}" \
     --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
-    --output-dir "${OUTPUT_DIR:?}" \
     --cert-name "revoked example" \
     --cert-name "valid example"
 
