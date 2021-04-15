@@ -8,6 +8,7 @@ set \
   -o nounset \
   -o pipefail
 IFS=$'\n\t'
+shopt -s inherit_errexit
 
 exit_with_error() {
   echo "${@}" >&2

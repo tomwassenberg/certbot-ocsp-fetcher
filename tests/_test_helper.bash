@@ -3,6 +3,7 @@ set \
   -o errtrace \
   -o pipefail
 IFS=$'\n'
+shopt -s inherit_errexit
 
 # Use folders with trailing newlines in them, to test that these are
 # handled properly as well. This employs a workaround, because trailing
