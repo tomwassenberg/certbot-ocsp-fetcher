@@ -236,8 +236,8 @@ start_in_correct_mode() {
   # Create temporary directory to store OCSP staple file,
   # before having checked the certificate status in the response
   local temp_output_dir
-  readonly temp_output_dir=$(mktemp --directory)
-  # shellcheck disable=2064
+  temp_output_dir=$(mktemp --directory)
+  readonly temp_output_dir
   trap "rm -r -- ""${temp_output_dir}" EXIT
 
   declare -A lineages_processed
@@ -331,7 +331,7 @@ check_for_existing_ocsp_staple_file() {
   # Validate and verify the existing local OCSP staple file
   local existing_ocsp_response
   set +e
-  readonly existing_ocsp_response=$(openssl ocsp \
+  existing_ocsp_response=$(openssl ocsp \
     -no_nonce \
     -issuer "${lineage_dir}/chain.pem" \
     -cert "${lineage_dir}/cert.pem" \
@@ -339,6 +339,7 @@ check_for_existing_ocsp_staple_file() {
     -respin "${OUTPUT_DIR}/${lineage_name}.der" 2>&3)
   local -ir existing_ocsp_response_rc=${?}
   set -e
+  readonly existing_ocsp_response
 
   ((existing_ocsp_response_rc == 0)) || return 1
 
@@ -461,7 +462,8 @@ print_and_handle_result() {
     local lineages_processed_formatted+=$'\n'"${lineage_name}"$'\t'"${lineages_processed["${lineage_name}"]}"
   done
   unset lineage_name
-  readonly lineages_processed_formatted=$(sort <<<"${lineages_processed_formatted:-}")
+  lineages_processed_formatted=$(sort <<<"${lineages_processed_formatted:-}")
+  readonly lineages_processed_formatted
 
   if [[ ${RELOAD_WEBSERVER:-} != false ]]; then
     reload_webserver
