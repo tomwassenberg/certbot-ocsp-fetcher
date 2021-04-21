@@ -60,4 +60,4 @@ blocks:
 
             # Lint code, check formatting and run tests
             - "checkout --use-cache"
-            - "source ./hooks.bash"
+            - "./hooks.bash"
