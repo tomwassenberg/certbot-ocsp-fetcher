@@ -17,8 +17,8 @@ shopt -s inherit_errexit
 
 shfmt -d -s .
 
-# On CI we use Ubuntu 18.04, whose Bats version doesn't support parallelism
-# yet.
+# On CI we don't run the tests in parallel, because this requires us to fully
+# isolate the Certbot invocations of each test, which doesn't work yet.
 if [[ ${CI:-} == true ]]; then
   bats --pretty ./tests
 else
