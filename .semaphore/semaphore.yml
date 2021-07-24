@@ -44,7 +44,7 @@ blocks:
                 --location
                 --silent
                 --show-error
-                https://github.com/mvdan/sh/releases/download/v3.1.2/shfmt_v3.1.2_linux_amd64 \
+                https://github.com/mvdan/sh/releases/download/v3.3.0/shfmt_v3.3.0_linux_amd64 \
               -o /usr/local/bin/shfmt"
             - "sudo chmod +x /usr/local/bin/shfmt"
 

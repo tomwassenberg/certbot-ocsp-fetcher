@@ -257,8 +257,7 @@ start_in_correct_mode() {
 run_standalone() {
   readonly CERTBOT_DIR=${CERTBOT_DIR:-/etc/letsencrypt}
 
-  if [[ ! -r ${CERTBOT_DIR} || (-d \
-    ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live) ]]; then
+  if [[ ! -r ${CERTBOT_DIR} || (-d ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live) ]]; then
     exit_with_error \
       error:$'\t\t'"can't access ${CERTBOT_DIR}/live"
   fi
@@ -344,11 +343,9 @@ check_for_existing_ocsp_staple_file() {
   ((existing_ocsp_response_rc == 0)) || return 1
 
   for existing_ocsp_response_line in ${existing_ocsp_response}; do
-    if [[ ${existing_ocsp_response_line} =~ \
-      ^[[:blank:]]*"This Update: "(.+)$ ]]; then
+    if [[ ${existing_ocsp_response_line} =~ ^[[:blank:]]*"This Update: "(.+)$ ]]; then
       local -r this_update=${BASH_REMATCH[1]}
-    elif [[ ${existing_ocsp_response_line} =~ \
-      ^[[:blank:]]*"Next Update: "(.+)$ ]]; then
+    elif [[ ${existing_ocsp_response_line} =~ ^[[:blank:]]*"Next Update: "(.+)$ ]]; then
       local -r next_update=${BASH_REMATCH[1]}
     fi
   done
