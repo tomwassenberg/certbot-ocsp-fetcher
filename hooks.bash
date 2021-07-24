@@ -17,10 +17,4 @@ shopt -s inherit_errexit
 
 shfmt -d -s .
 
-# On CI we don't run the tests in parallel, because this requires us to fully
-# isolate the Certbot invocations of each test, which doesn't work yet.
-if [[ ${CI:-} == true ]]; then
-  bats --pretty ./tests
-else
-  bats --pretty --jobs 8 ./tests
-fi
+bats --pretty --jobs 8 ./tests

@@ -9,25 +9,33 @@ shopt -s inherit_errexit
 # handled properly as well. This employs a workaround, because trailing
 # newlines are always stripped in a command substitution.
 setup() {
-  if [[ ${CI:-} == true ]]; then
-    readonly CERTBOT_CONFIG_DIR=${CERTBOT_BASE_DIR:?}/conf
-    readonly CERTBOT_LOGS_DIR=${CERTBOT_BASE_DIR:?}/logs
-    readonly CERTBOT_WORK_DIR=${CERTBOT_BASE_DIR:?}/work
-  else
-    CERTBOT_CONFIG_DIR=$(
-      mktemp --directory --suffix $'\n'
-      echo x
-    )
-    readonly CERTBOT_CONFIG_DIR=${CERTBOT_CONFIG_DIR%??}
-    [[ -d "${CERTBOT_CONFIG_DIR:?}/live" ]] ||
-      mkdir "${CERTBOT_CONFIG_DIR:?}/live"
-  fi
+  CERTBOT_BASE_DIR=$(
+    mktemp --directory --suffix $'\n'
+    echo x
+  )
+  readonly CERTBOT_BASE_DIR=${CERTBOT_BASE_DIR%??}
+
+  # Generate random DNS label, because Let's Encrypt merges certificate
+  # orders that are created in parallel, if the included SANs are identical.
+  UNIQUE_TEST_PREFIX=$(openssl rand -hex 3)
+
+  readonly CERTBOT_CONFIG_DIR=${CERTBOT_BASE_DIR:?}/conf
+  readonly CERTBOT_LOGS_DIR=${CERTBOT_BASE_DIR:?}/logs
+  readonly CERTBOT_WORK_DIR=${CERTBOT_BASE_DIR:?}/work
+  mkdir \
+    "${CERTBOT_CONFIG_DIR:?}" "${CERTBOT_LOGS_DIR:?}" "${CERTBOT_WORK_DIR:?}"
 
   OUTPUT_DIR=$(
     mktemp --directory --suffix $'\n'
     echo x
   )
   readonly OUTPUT_DIR=${OUTPUT_DIR%??}
+
+  if [[ ${CI:-} == true ]]; then
+    ln --symbolic "${CERTBOT_ACCOUNTS_DIR:?}/" "${CERTBOT_CONFIG_DIR:?}"
+  else
+    mkdir "${CERTBOT_CONFIG_DIR:?}/live"
+  fi
 }
 
 fetch_sample_certs() {
@@ -37,7 +45,7 @@ fetch_sample_certs() {
     case ${1:?} in
       "valid example")
         if [[ ${CI:-} == true ]]; then
-          lineages_host["${1:?}"]="${CERT_DOMAIN_FOR_CI:?}"
+          lineages_host["${1:?}"]="${UNIQUE_TEST_PREFIX:?}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1:?}"]="mozilla-modern.badssl.com"
         fi
@@ -45,7 +53,7 @@ fetch_sample_certs() {
         ;;
       "expired example")
         if [[ ${CI:-} == true ]]; then
-          lineages_host["${1:?}"]="${CERT_DOMAIN_FOR_CI:?}"
+          lineages_host["${1:?}"]="${UNIQUE_TEST_PREFIX:?}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1:?}"]="expired.badssl.com"
         fi
@@ -53,7 +61,7 @@ fetch_sample_certs() {
         ;;
       "revoked example")
         if [[ ${CI:-} == true ]]; then
-          lineages_host["${1:?}"]="${CERT_DOMAIN_FOR_CI:?}"
+          lineages_host["${1:?}"]="${UNIQUE_TEST_PREFIX:?}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1:?}"]="revoked.badssl.com"
         fi
@@ -135,11 +143,5 @@ fetch_sample_certs() {
 }
 
 teardown() {
-  if [[ ${CI:-} == true ]]; then
-    rm -r -- "${CERTBOT_CONFIG_DIR:?}"/{archive,csr,live,keys,renewal}
-  else
-    rm -r -- "${CERTBOT_CONFIG_DIR:?}"
-  fi
-
-  rm -fr -- "${OUTPUT_DIR:?}"
+  rm -fr -- "${CERTBOT_BASE_DIR:?}" "${OUTPUT_DIR:?}"
 }

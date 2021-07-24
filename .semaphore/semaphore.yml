@@ -21,8 +21,8 @@ blocks:
             - # Changing this requires updating the secrets configuration in
               # Semaphore as well, because that needs to place the ACME account
               # configuration at this location.
-              name: "CERTBOT_BASE_DIR"
-              value: "/tmp/letsencrypt"
+              name: "CERTBOT_ACCOUNTS_DIR"
+              value: "/tmp/letsencrypt/conf/accounts"
           commands:
             # Install ShellCheck
             - "curl
