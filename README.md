@@ -82,6 +82,14 @@ tool:
 - `-h, --help`\
   Print the correct usage of the tool.
 
+- `-l, --no-color`\
+  Do not use colored text output. This applies to both stdout and stderr. By
+  default, the tool's output might use color, as long as none of the following
+  conditions are true:
+    - no TTY is attached to the file descriptor in question
+    - [`$NO_COLOR`] is set
+    - `$TERM` is set to `dumb`
+
 - `-n NAME, --cert-name=NAME`\
   Specify the name of the certificate lineage(s) (as used by Certbot) that you
   want to process. Express multiple lineages by delimiting these with a comma,
@@ -120,3 +128,4 @@ tool:
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
  [Bats]: https://github.com/bats-core/bats-core
+ [`$NO_COLOR`]: https://no-color.org/

@@ -10,10 +10,28 @@ set \
 IFS=$'\n\t'
 shopt -s inherit_errexit
 
+determine_colored_output() {
+  declare -gl COLORED_STDOUT COLORED_STDERR
+  readonly GREEN='\033[0;32m'
+  readonly RED='\033[0;31m'
+  readonly COLOR_DEFAULT='\033[0m'
+
+  if [[ -v NO_COLOR || ${TERM:-} == dumb ]]; then
+    COLORED_STDOUT=false COLORED_STDERR=false
+  else
+    [[ -t 1 ]] || COLORED_STDOUT=false
+    [[ -t 2 ]] || COLORED_STDERR=false
+  fi
+
+}
+
 exit_with_error() {
+  [[ ${COLORED_STDERR:-} != false ]] &&
+    local -r COLORED_ERROR_MSG=${RED}${*}${COLOR_DEFAULT}
+
   # We will have closed file descriptor 2 unless verbosity was requested, so we
   # use the FD that stderr was copied to.
-  printf '%s\n' "${@}" >&4
+  printf '%b\n' "${COLORED_ERROR_MSG:-${@}}" >&4
 
   exit 1
 }
@@ -44,6 +62,7 @@ parse_cli_arguments() {
     "[-c/--certbot-dir DIRECTORY]"
     "[-f/--force-update]"
     "[-h/--help]"
+    "[-l/--no-color]"
     "[-n/--cert-name NAME[,NAME...] [-u/--ocsp-responder URL]]"
     "[-o/--output-dir DIRECTORY]"
     "[-q/--quiet]"
@@ -100,6 +119,9 @@ parse_cli_arguments() {
       -h | --help)
         echo >&2 "${usage[@]}"
         exit
+        ;;
+      -l | --no-color)
+        readonly COLORED_STDOUT=false COLORED_STDERR=false
         ;;
       -n | --cert-name | --cert-name=?*)
         if [[ ${parameter} =~ --cert-name=(.+) ]]; then
@@ -437,7 +459,7 @@ fetch_ocsp_response() {
   set -e
   if ((cert_expiry_rc != 0)); then
     ERROR_ENCOUNTERED=true
-    lineages_processed["${lineage_name}"]="not updated"
+    lineages_processed["${lineage_name}"]="failed to update"
     if [[ ${cert_expiry_output} == "Certificate will expire" ]]; then
       lineages_processed["${lineage_name}"]+=$'\t'"leaf certificate expired"
     fi
@@ -474,7 +496,7 @@ fetch_ocsp_response() {
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
     ERROR_ENCOUNTERED=true
 
-    lineages_processed["${lineage_name}"]="not updated"
+    lineages_processed["${lineage_name}"]="failed to update"
     if ((VERBOSITY >= 2)); then
       lineages_processed["${lineage_name}"]+=$'\t'"${ocsp_call_output//[[:space:]]/ }"
     else
@@ -494,8 +516,19 @@ fetch_ocsp_response() {
 print_and_handle_result() {
   local -r header=LINEAGE$'\t'RESULT$'\t'REASON
 
+  local lineages_processed_marked_up
   for lineage_name in "${!lineages_processed[@]}"; do
-    local lineages_processed_marked_up+=$'\n'"${lineage_name}"$'\t'"${lineages_processed["${lineage_name}"]}"
+    lineages_processed_marked_up+=$'\n'"${lineage_name}"$'\t'
+    if [[ ${COLORED_STDOUT:-} != false ]]; then
+      if [[ ${lineages_processed["${lineage_name}"]} =~ ^updated ]]; then
+        lineages_processed_marked_up+=${GREEN}
+      elif [[ ${lineages_processed["${lineage_name}"]} =~ ^"failed to update" ]]; then
+        lineages_processed_marked_up+=${RED}
+      fi
+      lineages_processed_marked_up+=${lineages_processed["${lineage_name}"]}${COLOR_DEFAULT}
+    else
+      lineages_processed_marked_up+=${lineages_processed["${lineage_name}"]}
+    fi
   done
   unset lineage_name
   lineages_processed_marked_up=$(sort <<<"${lineages_processed_marked_up:-}")
@@ -522,8 +555,13 @@ print_and_handle_result() {
     # Extract header to direct it to stderr
     printf '%s\n' "${output%%$'\n'*}" >&2
     # Remove header before printing everything else to stdout
-    [[ -n ${lineages_processed[*]} ]] && printf '%s\n' "${output#*$'\n'}"
-    printf %s "${column_error[@]-}" >&2
+    [[ -v lineages_processed[@] ]] && printf '%b\n' "${output#*$'\n'}"
+
+    if [[ ${COLORED_STDERR:-} != false ]]; then
+      printf '%b' "${RED}${column_error[*]-}${COLOR_DEFAULT}" >&2
+    else
+      printf '%b' "${column_error[*]-}" >&2
+    fi
   fi
 
   [[ ${ERROR_ENCOUNTERED:-} != true ]]
@@ -532,14 +570,19 @@ print_and_handle_result() {
 reload_webserver() {
   for lineage_name in "${!lineages_processed[@]}"; do
     if [[ ${lineages_processed["${lineage_name}"]} == updated ]]; then
+      local nginx_status
       if nginx -s reload >&3 2>&1; then
+        [[ ${COLORED_STDERR:-} != false ]] && nginx_status=${GREEN}
         # The last line includes a leading space, to workaround the lack of the
         # `-n` flag in later versions of `column`.
-        local -r nginx_status=$'\n\n \t'"nginx reloaded"
+        nginx_status+=$'\n\n \t'"nginx reloaded"
       else
         ERROR_ENCOUNTERED=true
-        local -r nginx_status=$'\n\n \t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
+        [[ ${COLORED_STDERR:-} != false ]] && nginx_status=${RED}
+        nginx_status=$'\n\n \t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
       fi
+      [[ ${COLORED_STDERR:-} != false ]] &&
+        readonly nginx_status+=${COLOR_DEFAULT}
       break
     fi
   done
@@ -548,6 +591,8 @@ reload_webserver() {
 
 main() {
   check_for_dependencies
+
+  determine_colored_output
 
   parse_cli_arguments "${@}"
 
