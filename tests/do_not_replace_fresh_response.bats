@@ -17,6 +17,6 @@ load _test_helper
     --cert-name "valid example"
 
   ((status == 0))
-  [[ ${lines[1]} =~ ^"valid example"[[:blank:]]+"not updated"[[:blank:]]+"valid staple file on disk"$ ]]
+  [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+"not updated"[[:blank:]]+"valid staple file on disk"$ ]]
   [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
 }

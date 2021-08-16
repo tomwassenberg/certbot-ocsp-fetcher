@@ -4,7 +4,7 @@ load _test_helper
 
 @test "fetch OCSP responses for empty lineage directory" {
   run "${TOOL_COMMAND_LINE[@]:?}" --certbot-dir "${CERTBOT_CONFIG_DIR:?}"
-  [[ ${lines[0]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
+  [[ ${lines[1]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
 
   output_stdout=$(2>/dev/null "${TOOL_COMMAND_LINE[@]:?}" --certbot-dir "${CERTBOT_CONFIG_DIR:?}")
   [[ -z ${output_stdout} ]]

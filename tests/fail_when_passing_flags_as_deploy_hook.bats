@@ -9,7 +9,7 @@ load _test_helper
       --cert-name "example"
 
   ((status != 0))
-  [[ ${lines[0]} =~ ^error: ]]
+  [[ ${lines[1]} =~ ^error: ]]
 
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR:?}/live/valid example" \
@@ -17,7 +17,7 @@ load _test_helper
       --certbot-dir "${CERTBOT_CONFIG_DIR:?}"
 
   ((status != 0))
-  [[ ${lines[0]} =~ ^error: ]]
+  [[ ${lines[1]} =~ ^error: ]]
 
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR:?}/live/valid example" \
@@ -25,7 +25,7 @@ load _test_helper
       --force-update
 
   ((status != 0))
-  [[ ${lines[0]} =~ ^error: ]]
+  [[ ${lines[1]} =~ ^error: ]]
 
   [[ ! -e "${OUTPUT_DIR:?}/valid example.der" ]]
 }

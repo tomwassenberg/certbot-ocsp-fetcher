@@ -25,9 +25,9 @@ load _test_helper
     run "${tool_command_line[@]}"
 
     ((status != 0))
-    [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+    [[ ${lines[3]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
     [[ -e "${OUTPUT_DIR:?}/valid example.der" ]]
   fi
-  [[ ${lines[1]} =~ ^"expired example"[[:blank:]]+"not updated"[[:blank:]]+"leaf certificate expired"$ ]]
+  [[ ${lines[2]} =~ ^"expired example"[[:blank:]]+"not updated"[[:blank:]]+"leaf certificate expired"$ ]]
   [[ ! -e "${OUTPUT_DIR:?}/expired example.der" ]]
 }

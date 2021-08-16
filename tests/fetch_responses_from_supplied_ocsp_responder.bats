@@ -20,9 +20,7 @@ load _test_helper
   ((status == 0))
 
   for line in "${!lines[@]}"; do
-    if ((line == 0)); then
-      [[ ${lines[${line:?}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
-    else
+    if ((line > 1)); then
       for lineage_name in "${CERTBOT_CONFIG_DIR:?}"/live/*; do
         # Skip non-directories, like Certbot's README file
         [[ -d ${lineage_name:?} ]] || continue
@@ -42,6 +40,8 @@ load _test_helper
       [[ ${cert_found:?} == true ]] ||
         (( line == -2 || line == -1 )) && ! { command -v column >&-; }
       unset cert_found
+    elif ((line == 1)); then
+      [[ ${lines[${line:?}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
     fi
   done
 }

@@ -24,7 +24,7 @@ load _test_helper
     --cert-name "valid example"
 
   ((status != 0))
-  [[ ${lines[1]} =~ ^"revoked example"[[:blank:]]+"not updated"[[:blank:]]+revoked$ ]]
-  [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+  [[ ${lines[2]} =~ ^"revoked example"[[:blank:]]+"not updated"[[:blank:]]+revoked$ ]]
+  [[ ${lines[3]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
   [[ ! -e "${OUTPUT_DIR:?}/revoked example.der" && -e "${OUTPUT_DIR:?}/valid example.der" ]]
 }

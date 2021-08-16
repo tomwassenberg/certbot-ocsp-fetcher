@@ -11,7 +11,10 @@ IFS=$'\n\t'
 shopt -s inherit_errexit
 
 exit_with_error() {
-  echo "${@}" >&2
+  # We will have closed file descriptor 2 unless verbosity was requested, so we
+  # use the FD that stderr was copied to.
+  printf '%s\n' "${@}" >&4
+
   exit 1
 }
 
@@ -196,7 +199,11 @@ parse_cli_arguments() {
         shift
         ;;
       *)
-        exit_with_error "${usage[@]}"
+        # Bash uses the first character in $IFS to join array elements, which
+        # normally is a space. However, we globally remove the space from $IFS
+        # to prevent unintended word splitting. Therefore, override $IFS again
+        # so it re-evaluates to a space.
+        IFS=' ' exit_with_error "${usage[@]}" 4>&2
         ;;
     esac
   done
@@ -217,6 +224,13 @@ parse_cli_arguments() {
     exec 3>&2
   else
     exec 3>/dev/null
+  fi
+
+  # First copy file descriptor 2 to a new FD, so stderr can still be used
+  # (unconditionally) in the exit_with_error function.
+  exec 4>&2
+  if ((VERBOSITY < 1)); then
+    exec 2>/dev/null
   fi
 }
 
@@ -263,6 +277,8 @@ start_in_correct_mode() {
 # Run in "check one or all certificate lineage(s) managed by Certbot" mode
 # $1 - Path to temporary output directory
 run_standalone() {
+  printf >&2 '%s\n\n' "Running in stand-alone mode..."
+
   readonly CERTBOT_DIR=${CERTBOT_DIR:-/etc/letsencrypt}
 
   if [[ ! -r ${CERTBOT_DIR} || (-d ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live) ]]; then
@@ -304,6 +320,8 @@ run_standalone() {
 # Run in deploy-hook mode, only processing the passed lineage
 # $1 - Path to temporary output directory
 run_as_deploy_hook() {
+  printf >&2 '%s\n\n' "Running as a deploy hook of Certbot..."
+
   if [[ -v CERTBOT_DIR ]]; then
     # The directory is already inferred from the environment variable that
     # Certbot passes
