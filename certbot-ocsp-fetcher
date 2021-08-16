@@ -393,6 +393,19 @@ check_for_existing_ocsp_staple_file() {
 fetch_ocsp_response() {
   local -r temp_output_dir=${2}
   local -r lineage_name=${3}
+
+  # This validation should be revisited once
+  # https://github.com/certbot/certbot/issues/6127 is fixed.
+  if [[ ${lineage_name} =~ ($'\n')|($'\t') ]]; then
+    ERROR_ENCOUNTERED=true
+    exit_with_error \
+      error:$'\t\t'"Unsupported characters encountered in the following" \
+      "lineage name: ${lineage_name}$'\n\n'" \
+      "Lineage names with embedded tabs or newlines are not supported," \
+      "because Certbot (as of version 1.18.0) does not have well-defined" \
+      'behavior on handling any "unconventional" lineage names.'
+  fi
+
   case ${1} in
     --standalone)
       local -r lineage_dir=${CERTBOT_DIR}/live/${lineage_name}
