@@ -10,6 +10,6 @@ load _test_helper
     run "${TOOL_COMMAND_LINE[@]:?}"
 
   ((status == 0))
-  [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+  [[ ${lines[2]} =~ ${SUCCESS_PATTERN:?} ]]
   [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
 }

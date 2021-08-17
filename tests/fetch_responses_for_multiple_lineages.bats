@@ -27,7 +27,7 @@ load _test_helper
           break
         fi
       elif ((line == 1)); then
-        [[ ${lines[${line:?}]} =~ ^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$ ]]
+        [[ ${lines[${line:?}]} =~ ${HEADER_PATTERN:?} ]]
       fi
     done
 

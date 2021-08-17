@@ -1,9 +1,15 @@
+# Ignore ShellCheck's check for unused variables, since this file is *sourced*
+# by the tests
+# shellcheck disable=2034
 set \
   -o errexit \
   -o errtrace \
   -o pipefail
 IFS=$'\n'
 shopt -s inherit_errexit
+
+HEADER_PATTERN="^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$"
+SUCCESS_PATTERN="^valid example[[:blank:]]+updated[[:blank:]]*$"
 
 # Use folders with trailing newlines in them, to test that these are
 # handled properly as well. This employs a workaround, because trailing

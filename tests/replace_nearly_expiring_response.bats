@@ -10,7 +10,7 @@ load _test_helper
     --cert-name "valid example"
 
   ((status == 0))
-  [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+  [[ ${lines[2]} =~ ${SUCCESS_PATTERN:?} ]]
   [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
 
   # Create hard link to initial staple file, so the device and inode
@@ -36,7 +36,7 @@ load _test_helper
       --cert-name "valid example"
 
   ((status == 0))
-  [[ ${lines[2]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+  [[ ${lines[2]} =~ ${SUCCESS_PATTERN:?} ]]
 
   # Compare device and inode numbers of staple file and temporary hard link, to
   # make sure that the staple file has been replaced.

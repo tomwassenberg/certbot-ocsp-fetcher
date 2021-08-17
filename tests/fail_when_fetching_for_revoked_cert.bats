@@ -25,6 +25,6 @@ load _test_helper
 
   ((status != 0))
   [[ ${lines[2]} =~ ^"revoked example"[[:blank:]]+"failed to update"[[:blank:]]+revoked$ ]]
-  [[ ${lines[3]} =~ ^"valid example"[[:blank:]]+updated[[:blank:]]*$ ]]
+  [[ ${lines[3]} =~ ${SUCCESS_PATTERN:?} ]]
   [[ ! -e "${OUTPUT_DIR:?}/revoked example.der" && -e "${OUTPUT_DIR:?}/valid example.der" ]]
 }
