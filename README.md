@@ -16,9 +16,8 @@ referenced in the nginx configurations of the websites that use the
 certificates. The tool can behave in two ways:
 
 - Certbot can invoke the tool as a deploy/renew hook (possible in Certbot
-  >=0.17.0). In this case, the tool ensures an up-to-date OCSP staple file
-  is present on disk for the specific certificate that was issued using
-  Certbot.
+  \>=0.17.0). In this case, the tool ensures an up-to-date OCSP staple file is
+  present on disk for the specific certificate that was issued using Certbot.
 
 - You can invoke the tool directly. In this case, the tool cycles through all
   sites that have a certificate lineage in Certbot's folder and ensures an
@@ -30,8 +29,13 @@ consequence, this allows you to use [OCSP Must-Staple].
 ## Dependencies
 - Bash 4.3+
 - Certbot 0.5.0+
-- nginx (tested with 1.14.0)
+- nginx (tested with 1.14.0)\
+  Optional if `--no-reload-webserver` (see below) is passed.
 - OpenSSL 1.1.0+
+- BSD's `column`\
+  Optional. For machine-readable TSV output, the version needs to support the
+  `--output-separator` flag. This is satisfied in e.g. Debian 11 and Ubuntu
+  20.10+.
 
 For running the tests, [Bats] is also required.
 
