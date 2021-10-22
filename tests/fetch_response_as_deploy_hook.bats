@@ -6,10 +6,10 @@ load _test_helper
   fetch_sample_certs "valid example"
 
   RENEWED_DOMAINS=foo \
-    RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR:?}/live/valid example" \
-    run "${TOOL_COMMAND_LINE[@]:?}"
+    RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR}/live/valid example" \
+    run "${TOOL_COMMAND_LINE[@]}"
 
   ((status == 0))
-  [[ ${lines[2]} =~ ${SUCCESS_PATTERN:?} ]]
-  [[ -f "${OUTPUT_DIR:?}/valid example.der" ]]
+  [[ ${lines[2]} =~ ${SUCCESS_PATTERN} ]]
+  [[ -f "${OUTPUT_DIR}/valid example.der" ]]
 }

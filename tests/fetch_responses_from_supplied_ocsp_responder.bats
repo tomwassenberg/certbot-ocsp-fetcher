@@ -11,24 +11,24 @@ load _test_helper
       local ocsp_responder=http://ocsp.digicert.com
   fi
 
-  run "${TOOL_COMMAND_LINE[@]:?}" \
-    --certbot-dir "${CERTBOT_CONFIG_DIR:?}" \
+  run "${TOOL_COMMAND_LINE[@]}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR}" \
     --cert-name "valid example 1,valid example 2" \
-    --ocsp-responder "${ocsp_responder:?}" \
+    --ocsp-responder "${ocsp_responder}" \
     --cert-name "valid example 3"
 
   ((status == 0))
 
   for line in "${!lines[@]}"; do
     if ((line > 1)); then
-      for lineage_name in "${CERTBOT_CONFIG_DIR:?}"/live/*; do
+      for lineage_name in "${CERTBOT_CONFIG_DIR}"/live/*; do
         # Skip non-directories, like Certbot's README file
-        [[ -d ${lineage_name:?} ]] || continue
+        [[ -d ${lineage_name} ]] || continue
 
-        [[ -f "${OUTPUT_DIR:?}/${lineage_name##*/}.der" ]]
+        [[ -f "${OUTPUT_DIR}/${lineage_name##*/}.der" ]]
 
         local -l cert_found=false
-        if [[ ${lines[${line:?}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
+        if [[ ${lines[${line}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
         then
           cert_found=true
           break
@@ -37,11 +37,11 @@ load _test_helper
 
       # Skip lines that consist of the warning that's printed when formatting
       # dependency is not present on system.
-      [[ ${cert_found:?} == true ]] ||
+      [[ ${cert_found} == true ]] ||
         (( line == -2 || line == -1 )) && ! { command -v column >&-; }
       unset cert_found
     elif ((line == 1)); then
-      [[ ${lines[${line:?}]} =~ ${HEADER_PATTERN:?} ]]
+      [[ ${lines[${line}]} =~ ${HEADER_PATTERN:?} ]]
     fi
   done
 }

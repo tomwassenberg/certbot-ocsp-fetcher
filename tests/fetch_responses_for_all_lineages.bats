@@ -5,21 +5,21 @@ load _test_helper
 @test "fetch OCSP responses for all certificate lineages" {
   fetch_sample_certs --multiple "valid example"
 
-  run "${TOOL_COMMAND_LINE[@]:?}" \
-    --certbot-dir "${CERTBOT_CONFIG_DIR:?}"
+  run "${TOOL_COMMAND_LINE[@]}" \
+    --certbot-dir "${CERTBOT_CONFIG_DIR}"
 
   ((status == 0))
 
   for line in "${!lines[@]}"; do
     if ((line > 1)); then
-      for lineage_name in "${CERTBOT_CONFIG_DIR:?}"/live/*; do
+      for lineage_name in "${CERTBOT_CONFIG_DIR}"/live/*; do
         # Skip non-directories, like Certbot's README file
-        [[ -d ${lineage_name:?} ]] || continue
+        [[ -d ${lineage_name} ]] || continue
 
-        [[ -f "${OUTPUT_DIR:?}/${lineage_name##*/}.der" ]]
+        [[ -f "${OUTPUT_DIR}/${lineage_name##*/}.der" ]]
 
         local -l cert_found=false
-        if [[ ${lines[${line:?}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
+        if [[ ${lines[${line}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
         then
           cert_found=true
           break
@@ -28,10 +28,10 @@ load _test_helper
 
       # Skip lines that consist of the warning that's printed when formatting
       # dependency is not present on system.
-      [[ ${cert_found:?} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
+      [[ ${cert_found} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
       unset cert_found
     elif ((line == 1)); then
-      [[ ${lines[${line:?}]} =~ ${HEADER_PATTERN:?} ]]
+      [[ ${lines[${line}]} =~ ${HEADER_PATTERN:?} ]]
     fi
   done
 }
