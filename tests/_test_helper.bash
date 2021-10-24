@@ -30,7 +30,7 @@ setup() {
   readonly CERTBOT_LOGS_DIR=${CERTBOT_BASE_DIR}/logs
   readonly CERTBOT_WORK_DIR=${CERTBOT_BASE_DIR}/work
   mkdir \
-    "${CERTBOT_CONFIG_DIR}" "${CERTBOT_LOGS_DIR:?}" "${CERTBOT_WORK_DIR:?}"
+    "${CERTBOT_CONFIG_DIR}" "${CERTBOT_LOGS_DIR}" "${CERTBOT_WORK_DIR}"
 
   OUTPUT_DIR=$(
     mktemp --directory --suffix $'\n'
@@ -44,7 +44,7 @@ setup() {
   )
 
   if [[ ${CI:-} == true ]]; then
-    ln --symbolic "${CERTBOT_ACCOUNTS_DIR:?}/" "${CERTBOT_CONFIG_DIR:?}"
+    ln --symbolic "${CERTBOT_ACCOUNTS_DIR:?}/" "${CERTBOT_CONFIG_DIR}"
 
     readonly TOOL_COMMAND_LINE
     service nginx start
@@ -62,7 +62,7 @@ fetch_sample_certs() {
     case ${1} in
       "valid example")
         if [[ ${CI:-} == true ]]; then
-          lineages_host["${1}"]="${UNIQUE_TEST_PREFIX:?}.${CERT_DOMAIN_FOR_CI:?}"
+          lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1}"]="mozilla-modern.badssl.com"
         fi
@@ -70,7 +70,7 @@ fetch_sample_certs() {
         ;;
       "expired example")
         if [[ ${CI:-} == true ]]; then
-          lineages_host["${1}"]="${UNIQUE_TEST_PREFIX:?}.${CERT_DOMAIN_FOR_CI:?}"
+          lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1}"]="expired.badssl.com"
         fi
@@ -78,7 +78,7 @@ fetch_sample_certs() {
         ;;
       "revoked example")
         if [[ ${CI:-} == true ]]; then
-          lineages_host["${1}"]="${UNIQUE_TEST_PREFIX:?}.${CERT_DOMAIN_FOR_CI:?}"
+          lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1}"]="revoked.badssl.com"
         fi
@@ -111,7 +111,7 @@ fetch_sample_certs() {
     else
       local tls_handshake lineage_chain lineage_leaf
 
-      mkdir -- "${CERTBOT_CONFIG_DIR}/live/${lineage_name:?}"
+      mkdir -- "${CERTBOT_CONFIG_DIR}/live/${lineage_name}"
 
       # Perform a TLS handshake
       tls_handshake="$(openssl s_client \
@@ -132,12 +132,12 @@ fetch_sample_certs() {
       # certificate as printed by OpenSSL
       lineage_leaf="${lineage_chain/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
       printf '%s\n' "${lineage_leaf}" > \
-        "${CERTBOT_CONFIG_DIR}/live/${lineage_name:?}/cert.pem"
+        "${CERTBOT_CONFIG_DIR}/live/${lineage_name}/cert.pem"
 
       # Strip first (i.e. leaf) certificate from chain
       lineage_chain="${lineage_chain#*-----END CERTIFICATE-----$'\n'}"
       printf '%s\n' "${lineage_chain}" > \
-        "${CERTBOT_CONFIG_DIR}/live/${lineage_name:?}/chain.pem"
+        "${CERTBOT_CONFIG_DIR}/live/${lineage_name}/chain.pem"
 
       unset tls_handshake lineage_chain lineage_leaf
     fi
@@ -160,5 +160,5 @@ fetch_sample_certs() {
 }
 
 teardown() {
-  rm -fr -- "${CERTBOT_BASE_DIR}" "${OUTPUT_DIR:?}"
+  rm -fr -- "${CERTBOT_BASE_DIR}" "${OUTPUT_DIR}"
 }

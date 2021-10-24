@@ -31,7 +31,7 @@ load _test_helper
       [[ ${cert_found} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
       unset cert_found
     elif ((line == 1)); then
-      [[ ${lines[${line}]} =~ ${HEADER_PATTERN:?} ]]
+      [[ ${lines[${line}]} =~ ${HEADER_PATTERN} ]]
     fi
   done
 }
