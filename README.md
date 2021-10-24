@@ -117,11 +117,13 @@ tool:
 - `-q, --quiet`\
   Do not print any output, including the list of certificates the tool
   processed and the actions the tool took.
+  This flag and the `-v/--verbose` flag are mutually exclusive.
 
 - `-v, --verbose`\
   Makes the tool verbose by printing specific (error) messages. These messages
   can be used for debugging purposes. Specify this flag multiple times for more
   verbosity.
+  This flag and the `-q/--quiet` flag are mutually exclusive.
 
 - `-w, --no-reload-webserver`\
   Do not reload `nginx`. When not specified and the tool created or updated at

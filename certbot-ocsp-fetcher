@@ -65,8 +65,7 @@ parse_cli_options() {
     "[-l/--no-color]"
     "[-n/--cert-name NAME[,NAME...] [-u/--ocsp-responder URL]]"
     "[-o/--output-dir DIRECTORY]"
-    "[-q/--quiet]"
-    "[-v/--verbose]"
+    "[-q/--quiet|-v/--verbose]"
     "[-w/--no-reload-webserver]"
   )
 
