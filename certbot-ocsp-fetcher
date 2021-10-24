@@ -30,8 +30,14 @@ exit_with_error() {
     local -r COLORED_ERROR_MSG=${RED}${*}${COLOR_DEFAULT}
 
   # We will have closed file descriptor 2 unless verbosity was requested, so we
-  # use the FD that stderr was copied to.
-  printf '%b\n' "${COLORED_ERROR_MSG:-${@}}" >&4
+  # will try to use FD4 (the FD that stderr was likely redirected to), and
+  # fallback to FD2 if FD4 wasn't opened yet.
+  if [[ -f /dev/fd/4 ]]; then
+    exec >&4
+  else
+    exec >&2
+  fi
+  printf '%b\n' "${COLORED_ERROR_MSG:-${@}}"
 
   exit 1
 }
