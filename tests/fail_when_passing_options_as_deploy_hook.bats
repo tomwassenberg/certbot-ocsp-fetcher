@@ -2,7 +2,7 @@
 
 load _test_helper
 
-@test "fail when passing incompatible flags when ran as a deploy hook for Certbot" {
+@test "fail when passing incompatible options when ran as a deploy hook for Certbot" {
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \

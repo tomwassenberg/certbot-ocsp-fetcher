@@ -56,7 +56,7 @@ check_for_dependencies() {
   fi
 }
 
-parse_cli_arguments() {
+parse_cli_options() {
   local -r usage=(
     "USAGE: ${0}"
     "[-c/--certbot-dir DIRECTORY]"
@@ -601,7 +601,7 @@ main() {
 
   determine_colored_output
 
-  parse_cli_arguments "${@}"
+  parse_cli_options "${@}"
 
   prepare_output_dir
 
