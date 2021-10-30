@@ -26,8 +26,10 @@ determine_colored_output() {
 }
 
 exit_with_error() {
+  local error_prefix=error:$'\t\t'
+
   [[ ${COLORED_STDERR:-} != false ]] &&
-    local -r COLORED_ERROR_MSG=${RED}${*}${COLOR_DEFAULT}
+    local -r COLORED_ERROR_MSG=${RED}${error_prefix}${*}${COLOR_DEFAULT}
 
   # We will have closed file descriptor 2 unless verbosity was requested, so we
   # will try to use FD4 (the FD that stderr was likely redirected to), and
@@ -37,7 +39,7 @@ exit_with_error() {
   else
     exec >&2
   fi
-  printf '%b\n' "${COLORED_ERROR_MSG:-${@}}"
+  printf '%b\n' "${COLORED_ERROR_MSG:-${error_prefix}${@}}"
 
   exit 1
 }
@@ -46,8 +48,7 @@ check_for_dependencies() {
   if ((BASH_VERSINFO[0] == 4 && \
     BASH_VERSINFO[1] < 3 || \
     BASH_VERSINFO[0] < 4)); then
-    exit_with_error \
-      error:$'\t\t'"${0##*/} requires Bash 4.3+."
+    exit_with_error "${0##*/} requires Bash 4.3+."
   fi
 
   if ! { command -v openssl >&- &&
@@ -57,30 +58,50 @@ check_for_dependencies() {
     BASH_REMATCH[1] > 1)); }; then
     # shellcheck disable=2016
     exit_with_error \
-      error:$'\t\t'"${0##*/} requires OpenSSL 1.1.0+," \
+      "${0##*/} requires OpenSSL 1.1.0+," \
       'but it is not available on $PATH.'
   fi
 }
 
 parse_cli_options() {
-  local -r usage=(
-    "USAGE: ${0}"
-    "[-c/--certbot-dir DIRECTORY]"
-    "[-f/--force-update]"
-    "[-h/--help]"
-    "[-l/--no-color]"
-    "[-n/--cert-name NAME[,NAME...] [-u/--ocsp-responder URL]]"
-    "[-o/--output-dir DIRECTORY]"
-    "[-q/--quiet|-v/--verbose]"
-    "[-w/--no-reload-webserver]"
-  )
+  local -r cli_options="
+Usage: ${0##*/} [-c/--certbot-dir DIRECTORY] [-f/--force-update] \\
+  [-h/--help] [-l/--no-color] [-n/--cert-name NAME[,NAME...] \\
+  [-u/--ocsp-responder URL]] [-o/--output-dir DIRECTORY] \\
+  [-q/--quiet|-v/--verbose] [-w/--no-reload-webserver]
+"
+
+  print_option_error() {
+    local reason=${1} option=${2}
+    shift 2
+    local option_error="${option}: "
+
+    case ${reason} in
+      --conflict)
+        local second_option=${1}
+        shift
+        option_error+="This option cannot be combined with the option ${second_option}."
+        ;;
+      --duplicate)
+        option_error+="This option cannot be specified multiple times."
+        ;;
+      --unknown)
+        option_error+="Invalid option."
+        ;;
+      --value)
+        option_error+="This option requires a value."
+        ;;
+      *)
+        exit 1
+        ;;
+    esac
+
+    exit_with_error "${option_error}" "${cli_options}"
+  }
 
   declare -gl ERROR_ENCOUNTERED
 
   declare -gi VERBOSITY=${VERBOSITY:-1}
-  local -r verbosity_error=(
-    "error: -q/--quiet cannot be specified in conjunction with -v/--verbose."
-  )
 
   while ((${#} > 0)); do
     local parameter=${1}
@@ -91,7 +112,7 @@ parse_cli_options() {
         ;;
       -c | --certbot-dir | --certbot-dir=?*)
         if [[ -v CERTBOT_DIR ]]; then
-          exit_with_error "${usage[@]}"
+          print_option_error --duplicate "${parameter}"
         fi
 
         if [[ ${parameter} =~ --certbot-dir=(.+) ]]; then
@@ -101,7 +122,7 @@ parse_cli_options() {
             CERTBOT_DIR=${2}
             shift
           else
-            exit_with_error "${usage[@]}"
+            print_option_error --value "${parameter}"
           fi
         fi
 
@@ -122,7 +143,41 @@ parse_cli_options() {
         shift
         ;;
       -h | --help)
-        echo >&2 "${usage[@]}"
+        {
+          printf '%s\n' certbot-ocsp-fetcher
+          printf '%s\n' "${cli_options}"
+          cat <<EOSTRING
+
+certbot-ocsp-fetcher helps you setup OCSP stapling in nginx. The tool primes
+nginx's OCSP cache to work around nginx's flawed OCSP stapling implementation.
+The tool does this by fetching and saving OCSP responses for TLS certificates
+issued with Certbot.
+
+---
+
+Example:
+
+1. Fetch OCSP responses for all certificates managed by Certbot, and save
+them in the current working directory. This should usually be run on a
+schedule, e.g. as a cronjob or systemd timer.
+
+$ ${0##*/}
+
+2. Add the path(s) to the resulting OCSP response(s) as the value of the
+ssl_stapling_file directive in the corresponding vhosts in Nginx. Don't
+forget to reload Nginx afterwards.
+
+3. Re-issue all certificates managed by Certbot, to add the OCSP Must-Staple
+flag to the certs and automatically run certbot-ocsp-fetcher during renewals:
+
+$ certbot renew --deploy-hook "${0##*/}" --force-renewal --must-staple
+
+---
+
+See the online README for an explanation of all the CLI options:
+https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/master/README.md
+EOSTRING
+        } >&2
         exit
         ;;
       -l | --no-color)
@@ -137,7 +192,7 @@ parse_cli_options() {
             local cert_lineages_value=${2}
             shift 2
           else
-            exit_with_error "${usage[@]}"
+            print_option_error --value "${parameter}"
           fi
         fi
 
@@ -155,7 +210,7 @@ parse_cli_options() {
               done
               shift
             else
-              exit_with_error "${usage[@]}"
+              print_option_error --value "${parameter}"
             fi
             shift
             ;;
@@ -179,7 +234,7 @@ parse_cli_options() {
         ;;
       -o | --output-dir | --output-dir=?*)
         if [[ -v OUTPUT_DIR ]]; then
-          exit_with_error "${usage[@]}"
+          print_option_error --duplicate "${parameter}"
         fi
 
         if [[ ${parameter} =~ --output-dir=(.+) ]]; then
@@ -189,7 +244,7 @@ parse_cli_options() {
             OUTPUT_DIR=${2}
             shift
           else
-            exit_with_error "${usage[@]}"
+            print_option_error --value "${parameter}"
           fi
         fi
 
@@ -205,7 +260,7 @@ parse_cli_options() {
         ;;
       -q | --quiet)
         if ((VERBOSITY != 1)); then
-          exit_with_error "${verbosity_error[@]}"
+          print_option_error --conflict "${parameter}" -v/--verbose
         else
           readonly VERBOSITY=0
           shift
@@ -213,7 +268,7 @@ parse_cli_options() {
         ;;
       -v | --verbose)
         if ((VERBOSITY == 0)); then
-          exit_with_error "${verbosity_error[@]}"
+          print_option_error --conflict "${parameter}" -q/--quiet
         else
           VERBOSITY+=1
           shift
@@ -230,7 +285,7 @@ parse_cli_options() {
         # normally is a space. However, we globally remove the space from $IFS
         # to prevent unintended word splitting. Therefore, override $IFS again
         # so it re-evaluates to a space.
-        IFS=' ' exit_with_error "${usage[@]}" 4>&2
+        print_option_error --unknown "${parameter}"
         ;;
     esac
   done
@@ -276,8 +331,7 @@ prepare_output_dir() {
   fi
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then
-    exit_with_error \
-      error:$'\t\t'"no write access to output directory (\"${OUTPUT_DIR}\")"
+    exit_with_error "no write access to output directory (\"${OUTPUT_DIR}\")"
   fi
 }
 
@@ -309,8 +363,7 @@ run_standalone() {
   readonly CERTBOT_DIR=${CERTBOT_DIR:-/etc/letsencrypt}
 
   if [[ ! -r ${CERTBOT_DIR} || (-d ${CERTBOT_DIR}/live && ! -r ${CERTBOT_DIR}/live) ]]; then
-    exit_with_error \
-      error:$'\t\t'"can't access ${CERTBOT_DIR}/live"
+    exit_with_error "can't access ${CERTBOT_DIR}/live"
   fi
 
   # Check specific lineage if passed on CLI,
@@ -324,8 +377,7 @@ run_standalone() {
           "${lineage_name}" \
           "${CERT_LINEAGES["${lineage_name}"]}"
       else
-        exit_with_error \
-          error:$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
+        exit_with_error "can't access ${CERTBOT_DIR}/live/${lineage_name}"
       fi
     done
   else
@@ -353,7 +405,7 @@ run_as_deploy_hook() {
     # The directory is already inferred from the environment variable that
     # Certbot passes
     exit_with_error \
-      error:$'\t\t'"-c/--certbot-dir cannot be passed" \
+      "-c/--certbot-dir cannot be passed" \
       "when run as Certbot hook"
   fi
 
@@ -361,15 +413,14 @@ run_as_deploy_hook() {
     # When run as deploy hook the behavior of this flag is used by default.
     # Therefore passing this flag would not have any effect.
     exit_with_error \
-      error:$'\t\t'"-f/--force-update cannot be passed" \
+      "-f/--force-update cannot be passed" \
       "when run as Certbot hook"
   fi
 
   if [[ -v CERT_LINEAGES[@] ]]; then
     # The certificate lineage is already inferred from the environment
     # variable that Certbot passes
-    exit_with_error \
-      error:$'\t\t'"-n/--cert-name cannot be passed when run as Certbot hook"
+    exit_with_error "-n/--cert-name cannot be passed when run as Certbot hook"
   fi
 
   fetch_ocsp_response \
@@ -426,7 +477,7 @@ fetch_ocsp_response() {
   if [[ ${lineage_name} =~ ($'\n')|($'\t') ]]; then
     ERROR_ENCOUNTERED=true
     exit_with_error \
-      error:$'\t\t'"Unsupported characters encountered in the following" \
+      "Unsupported characters encountered in the following" \
       "lineage name: ${lineage_name}$'\n\n'" \
       "Lineage names with embedded tabs or newlines are not supported," \
       "because Certbot (as of version 1.18.0) does not have well-defined" \
