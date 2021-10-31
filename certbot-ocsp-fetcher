@@ -319,13 +319,13 @@ run_standalone() {
     for lineage_name in "${!CERT_LINEAGES[@]}"; do
       if [[ -r ${CERTBOT_DIR}/live/${lineage_name} ]]; then
         fetch_ocsp_response \
-          "--standalone" \
+          --standalone \
           "${temp_output_dir}" \
           "${lineage_name}" \
           "${CERT_LINEAGES["${lineage_name}"]}"
       else
         exit_with_error \
-          "error:"$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
+          error:$'\t\t'"can't access ${CERTBOT_DIR}/live/${lineage_name}"
       fi
     done
   else
@@ -338,7 +338,7 @@ run_standalone() {
       [[ -d ${lineage_dir} ]] || continue
 
       fetch_ocsp_response \
-        "--standalone" "${temp_output_dir}" "${lineage_dir##*/}"
+        --standalone "${temp_output_dir}" "${lineage_dir##*/}"
     done
     unset lineage_dir
   fi
@@ -570,9 +570,9 @@ print_and_handle_result() {
     [[ -v lineages_processed[@] ]] && printf '%b\n' "${output#*$'\n'}"
 
     if [[ ${COLORED_STDERR:-} != false ]]; then
-      printf '%b' "${RED}${column_error[*]-}${COLOR_DEFAULT}" >&2
+      printf %b "${RED}${column_error[*]-}${COLOR_DEFAULT}" >&2
     else
-      printf '%b' "${column_error[*]-}" >&2
+      printf %b "${column_error[*]-}" >&2
     fi
   fi
 
