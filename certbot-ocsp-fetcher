@@ -52,7 +52,7 @@ check_for_dependencies() {
   fi
 
   if ! { command -v openssl >&- &&
-    [[ $(openssl version) =~ ^OpenSSL\ ([[:digit:]]+)\.([[:digit:]]+) ]] &&
+    [[ $(openssl version || true) =~ ^OpenSSL\ ([[:digit:]]+)\.([[:digit:]]+) ]] &&
     ((BASH_REMATCH[1] == 1 && \
     BASH_REMATCH[2] >= 1 || \
     BASH_REMATCH[1] > 1)); }; then
@@ -457,10 +457,22 @@ check_for_existing_ocsp_staple_file() {
 
   # Only continue fetching OCSP response if existing response expires within
   # half of its lifetime.
-  local -ri response_lifetime_in_seconds=$((\
-    $(date +%s --date "${next_update}") - $(date +%s --date "${this_update}")))
-  (($(date +%s) < \
-  $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2)) || return 1
+  {
+    # The command substitutions here don't respect `set -o errexit`, but in
+    # case any of them fail, the total command still fails unless both
+    # substitutions print an integer. This seems very unlikely to occur, so
+    # let's ignore this.
+    # shellcheck disable=2312
+    local -ri response_lifetime_in_seconds=$((\
+      $(date +%s --date "${next_update}") - \
+      $(date +%s --date "${this_update}")))
+
+    # `set -o errexit` isn't respected here either, but we default to renewing
+    # the OCSP response, so this is fine.
+    # shellcheck disable=2312
+    (($(date +%s) < $(date +%s --date "${this_update}") + \
+    response_lifetime_in_seconds / 2)) || return 1
+  }
 }
 
 # Generate file used by ssl_stapling_file in nginx config of websites
@@ -488,6 +500,9 @@ fetch_ocsp_response() {
     --standalone)
       local -r lineage_dir=${CERTBOT_DIR}/live/${lineage_name}
 
+      # `set -o errexit` is not respected here, but in case of failure we still
+      # err on the safe side by renewing the OCSP staple file.
+      # shellcheck disable=2310
       if [[ ${FORCE_UPDATE:-} != true ]] &&
         check_for_existing_ocsp_staple_file; then
         lineages_processed["${lineage_name}"]="not updated"$'\t'"valid staple file on disk"
@@ -546,7 +561,7 @@ fetch_ocsp_response() {
     -respout "${temp_output_dir}/${lineage_name}.der" 2>&3)
   local -ir ocsp_call_rc=${?}
   set -e
-  readonly ocsp_call_output=${ocsp_call_output#${lineage_dir}/cert.pem: }
+  readonly ocsp_call_output=${ocsp_call_output#"${lineage_dir}"/cert.pem: }
   local -r cert_status=${ocsp_call_output%%$'\n'*}
 
   if [[ ${ocsp_call_rc} != 0 || ${cert_status} != good ]]; then
