@@ -8,7 +8,7 @@ load _test_helper
   if [[ ${CI:-} == true ]]; then
       local ocsp_responder=http://stg-r3.o.lencr.org
   else
-      local ocsp_responder=http://ocsp.digicert.com
+      local ocsp_responder=http://r3.o.lencr.org
   fi
 
   run "${TOOL_COMMAND_LINE[@]}" \
