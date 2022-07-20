@@ -281,10 +281,6 @@ EOSTRING
         shift
         ;;
       *)
-        # Bash uses the first character in $IFS to join array elements, which
-        # normally is a space. However, we globally remove the space from $IFS
-        # to prevent unintended word splitting. Therefore, override $IFS again
-        # so it re-evaluates to a space.
         print_option_error --unknown "${parameter}"
         ;;
     esac
