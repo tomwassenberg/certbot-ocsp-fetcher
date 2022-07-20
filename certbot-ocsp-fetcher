@@ -175,7 +175,7 @@ $ certbot renew --deploy-hook "${0##*/}" --force-renewal --must-staple
 ---
 
 See the online README for an explanation of all the CLI options:
-https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/master/README.md
+https://github.com/tomwassenberg/certbot-ocsp-fetcher/blob/main/README.md
 EOSTRING
         } >&2
         exit
