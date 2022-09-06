@@ -323,7 +323,9 @@ prepare_output_dir() {
         -- "${OUTPUT_DIR}" || true
     fi
   else
-    readonly OUTPUT_DIR=.
+    # Use $CACHE_DIRECTORY if set (e.g. when run as a systemd service),
+    # otherwise the working directory
+    readonly OUTPUT_DIR=${CACHE_DIRECTORY:-.}
   fi
 
   if [[ ! -w ${OUTPUT_DIR} ]]; then

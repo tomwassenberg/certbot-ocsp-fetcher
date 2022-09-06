@@ -48,8 +48,9 @@ The filename of a resulting OCSP staple is the name of the certificate lineage
 (as used by Certbot) with the `der` extension appended. Be sure to point nginx
 to the staple file(s) by using the `ssl_stapling_file` directive in the nginx
 configuration of the website. For instance, by including: `ssl_stapling_file
-/etc/nginx/ocsp-cache/example.com.der;`, where `/etc/nginx/ocsp-cache` is the
-output directory that can be specified using `-o/--output-dir`.
+/var/cache/certbot-ocsp-fetcher/example.com.der;`, where
+`/var/cache/certbot-ocsp-fetcher` is the default output directory when using
+the [supplied systemd service].
 
 Invoke the tool with privileges that allow it to access the directory that
 Certbot stores its certificates in (by default `/etc/letsencrypt/live`). You
@@ -112,7 +113,9 @@ tool:
 
 - `-o DIRECTORY, --output-dir=DIRECTORY`\
   Specify the directory where OCSP staple files are saved. When not specified,
-  this defaults to the working directory.
+  this defaults to the `$STATE_DIRECTORY` environment variable, as is set by
+  the [supplied systemd service]. If this environment variable is not set
+  either, this defaults to the working directory.
 
 - `-q, --quiet`\
   Do not print any output, including the list of certificates the tool
@@ -134,4 +137,5 @@ tool:
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
  [Bats]: https://github.com/bats-core/bats-core
+ [supplied systemd service]: systemd-units/certbot-ocsp-fetcher.service#11
  [`$NO_COLOR`]: https://no-color.org/

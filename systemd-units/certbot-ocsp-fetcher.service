@@ -8,6 +8,8 @@ Type=oneshot
 # on failure.
 # Restart=on-failure
 
+CacheDirectory=%N
+
 User=root
 Group=root
 ExecStart=/usr/local/bin/certbot-ocsp-fetcher
