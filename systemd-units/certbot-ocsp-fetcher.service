@@ -10,7 +10,7 @@ CacheDirectory=%N
 
 User=root
 Group=root
-ExecStart=/usr/local/bin/certbot-ocsp-fetcher -w -o /etc/nginx/ocsp-cache
+ExecStart=/usr/local/bin/certbot-ocsp-fetcher --no-reload-webserver
 ExecStartPost=systemctl reload nginx.service
 
 RestartSec=5
@@ -50,12 +50,8 @@ DeviceAllow=/dev/null w
 ProtectSystem=strict
 InaccessiblePaths=/root/
 ReadOnlyPaths=/etc/letsencrypt
-ReadWritePaths=/etc/nginx/ocsp-cache
 UMask=0077
 
 SystemCallArchitectures=native
 SystemCallFilter=@system-service
 SystemCallFilter=~@clock @debug @module @mount @reboot @swap @resources @cpu-emulation @raw-io @obsolete @keyring @privileged
-
-[Install]
-WantedBy=default.target
