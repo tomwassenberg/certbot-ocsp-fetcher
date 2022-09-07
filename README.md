@@ -113,7 +113,7 @@ tool:
 
 - `-o DIRECTORY, --output-dir=DIRECTORY`\
   Specify the directory where OCSP staple files are saved. When not specified,
-  this defaults to the `$STATE_DIRECTORY` environment variable, as is set by
+  this defaults to the `$CACHE_DIRECTORY` environment variable, as is set by
   the [supplied systemd service]. If this environment variable is not set
   either, this defaults to the working directory.
 
