@@ -40,3 +40,16 @@ blocks:
             # Lint code, check formatting and run tests
             - "checkout --use-cache"
             - "./hooks.bash"
+
+            - >
+              sudo ln --symbolic "${PWD}"/certbot-ocsp-fetcher /usr/local/bin/
+            - "cd systemd-units"
+            - "sudo ln \"${PWD}\"/* /etc/systemd/system/"
+            - "sudo systemd-analyze verify *"
+            - |
+              for service in *.service; do
+                sudo systemd-analyze security --no-pager "${service}" |
+                  tee >(cat >&2) |
+                  tail --lines 1 |
+                  grep --word-regexp OK >/dev/null
+              done
