@@ -10,7 +10,7 @@ CacheDirectory=%N
 
 User=root
 Group=root
-ExecStart=/usr/local/bin/certbot-ocsp-fetcher --no-reload-webserver
+ExecStart=%N --no-reload-webserver
 ExecStartPost=systemctl reload nginx.service
 
 RestartSec=5
