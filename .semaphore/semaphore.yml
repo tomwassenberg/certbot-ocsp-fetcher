@@ -24,29 +24,8 @@ blocks:
               name: "CERTBOT_ACCOUNTS_DIR"
               value: "/tmp/letsencrypt/conf/accounts"
           commands:
-            # Install ShellCheck
-            - "curl
-                --fail
-                --location
-                --silent
-                --show-error
-                https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz |
-              sudo tar
-                --extract
-                --directory /usr/local/bin
-                --strip-components 1
-                --xz
-                shellcheck-stable/shellcheck"
-
-            # Install shfmt
-            - "sudo curl
-                --fail
-                --location
-                --silent
-                --show-error
-                https://github.com/mvdan/sh/releases/download/v3.3.0/shfmt_v3.3.0_linux_amd64 \
-              -o /usr/local/bin/shfmt"
-            - "sudo chmod +x /usr/local/bin/shfmt"
+            # Install linters
+            - "sudo snap install shellcheck shfmt"
 
             # Install Certbot
             - "sudo snap install --classic certbot"
@@ -60,4 +39,4 @@ blocks:
 
             # Lint code, check formatting and run tests
             - "checkout --use-cache"
-            - "sudo -E ./hooks.bash"
+            - "./hooks.bash"

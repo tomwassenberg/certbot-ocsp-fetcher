@@ -2,7 +2,9 @@
 
 @test "print error and usage instructions on wrong invocations" {
   local -A options
-  options[-c]=value options[-X]=invalid options[-o foo -o bar]="multiple times"
+  options["-c"]=value
+  options["-X"]=invalid
+  options["-o foo -o bar"]="multiple times"
 
   shopt -s nocasematch
   for option in "${!options[@]}"; do

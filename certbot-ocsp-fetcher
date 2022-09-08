@@ -45,17 +45,13 @@ exit_with_error() {
 }
 
 check_for_dependencies() {
-  if ((BASH_VERSINFO[0] == 4 && \
-    BASH_VERSINFO[1] < 3 || \
-    BASH_VERSINFO[0] < 4)); then
+  if ((BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3 || BASH_VERSINFO[0] < 4)); then
     exit_with_error "${0##*/} requires Bash 4.3+."
   fi
 
   if ! { command -v openssl >&- &&
     [[ $(openssl version || true) =~ ^OpenSSL\ ([[:digit:]]+)\.([[:digit:]]+) ]] &&
-    ((BASH_REMATCH[1] == 1 && \
-    BASH_REMATCH[2] >= 1 || \
-    BASH_REMATCH[1] > 1)); }; then
+    ((BASH_REMATCH[1] == 1 && BASH_REMATCH[2] >= 1 || BASH_REMATCH[1] > 1)); }; then
     # shellcheck disable=2016
     exit_with_error \
       "${0##*/} requires OpenSSL 1.1.0+," \
@@ -461,15 +457,12 @@ check_for_existing_ocsp_staple_file() {
     # substitutions print an integer. This seems very unlikely to occur, so
     # let's ignore this.
     # shellcheck disable=2312
-    local -ri response_lifetime_in_seconds=$((\
-      $(date +%s --date "${next_update}") - \
-      $(date +%s --date "${this_update}")))
+    local -ri response_lifetime_in_seconds=$(($(date +%s --date "${next_update}") - $(date +%s --date "${this_update}")))
 
     # `set -o errexit` isn't respected here either, but we default to renewing
     # the OCSP response, so this is fine.
     # shellcheck disable=2312
-    (($(date +%s) < $(date +%s --date "${this_update}") + \
-    response_lifetime_in_seconds / 2)) || return 1
+    (($(date +%s) < $(date +%s --date "${this_update}") + response_lifetime_in_seconds / 2)) || return 1
   }
 }
 

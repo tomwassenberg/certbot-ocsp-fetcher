@@ -17,9 +17,7 @@ load _test_helper
   # numbers match, and can be used after the second run to determine that the
   # staple file has been replaced.
   ln "${OUTPUT_DIR}/"{valid,initial}" example.der"
-  [[ \
-    "${OUTPUT_DIR}/valid example.der" -ef \
-    "${OUTPUT_DIR}/initial example.der" ]]
+  [[ "${OUTPUT_DIR}/valid example.der" -ef "${OUTPUT_DIR}/initial example.der" ]]
 
   # We skew the time by 3,5 days in the future, because that is half of the
   # common lifetime of an OCSP response; 7 days. The tool is setup to renew
@@ -32,15 +30,13 @@ load _test_helper
   run faketime \
     -f "+3.5 days" \
     "${TOOL_COMMAND_LINE[@]}" \
-      --certbot-dir "${CERTBOT_CONFIG_DIR}" \
-      --cert-name "valid example"
+    --certbot-dir "${CERTBOT_CONFIG_DIR}" \
+    --cert-name "valid example"
 
   ((status == 0))
   [[ ${lines[2]} =~ ${SUCCESS_PATTERN} ]]
 
   # Compare device and inode numbers of staple file and temporary hard link, to
   # make sure that the staple file has been replaced.
-  [[ ! \
-    "${OUTPUT_DIR}/valid example.der" -ef \
-    "${OUTPUT_DIR}/initial example.der" ]]
+  [[ ! "${OUTPUT_DIR}/valid example.der" -ef "${OUTPUT_DIR}/initial example.der" ]]
 }

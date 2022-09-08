@@ -21,8 +21,7 @@ load _test_helper
     for line in "${!lines[@]}"; do
       if ((line > 1)); then
         local -l cert_found=false
-        if [[ ${lines[${line}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]
-        then
+        if [[ ${lines[${line}]} =~ ^"${lineage_name##*/}"[[:blank:]]+updated[[:blank:]]*$ ]]; then
           cert_found=true
           break
         fi
@@ -33,7 +32,7 @@ load _test_helper
 
     # Skip lines that consist of the warning that's printed when formatting
     # dependency is not present on system.
-    [[ ${cert_found} == true ]] || (( line == -2 || line == -1 )) && ! command -v column
+    [[ ${cert_found} == true ]] || ((line == -2 || line == -1)) && ! command -v column
     unset cert_found
   done
 }

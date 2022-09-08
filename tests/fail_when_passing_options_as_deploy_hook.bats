@@ -6,7 +6,7 @@ load _test_helper
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
-      --cert-name "example"
+    --cert-name "example"
 
   ((status != 0))
   [[ ${lines[1]} =~ ^error: ]]
@@ -14,7 +14,7 @@ load _test_helper
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
-      --certbot-dir "${CERTBOT_CONFIG_DIR}"
+    --certbot-dir "${CERTBOT_CONFIG_DIR}"
 
   ((status != 0))
   [[ ${lines[1]} =~ ^error: ]]
@@ -22,7 +22,7 @@ load _test_helper
   RENEWED_DOMAINS=foo \
     RENEWED_LINEAGE="${CERTBOT_CONFIG_DIR}/live/valid example" \
     run "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher" \
-      --force-update
+    --force-update
 
   ((status != 0))
   [[ ${lines[1]} =~ ^error: ]]

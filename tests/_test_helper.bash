@@ -131,13 +131,11 @@ fetch_sample_certs() {
       # Strip all certificates except the first, retaining only the leaf
       # certificate as printed by OpenSSL
       lineage_leaf="${lineage_chain/%-----END CERTIFICATE-----*/-----END CERTIFICATE-----}"
-      printf '%s\n' "${lineage_leaf}" > \
-        "${CERTBOT_CONFIG_DIR}/live/${lineage_name}/cert.pem"
+      printf '%s\n' "${lineage_leaf}" >"${CERTBOT_CONFIG_DIR}/live/${lineage_name}/cert.pem"
 
       # Strip first (i.e. leaf) certificate from chain
       lineage_chain="${lineage_chain#*-----END CERTIFICATE-----$'\n'}"
-      printf '%s\n' "${lineage_chain}" > \
-        "${CERTBOT_CONFIG_DIR}/live/${lineage_name}/chain.pem"
+      printf '%s\n' "${lineage_chain}" >"${CERTBOT_CONFIG_DIR}/live/${lineage_name}/chain.pem"
 
       unset tls_handshake lineage_chain lineage_leaf
     fi

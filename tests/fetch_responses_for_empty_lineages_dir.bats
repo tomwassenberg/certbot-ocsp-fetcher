@@ -6,6 +6,6 @@ load _test_helper
   run "${TOOL_COMMAND_LINE[@]}" --certbot-dir "${CERTBOT_CONFIG_DIR}"
   [[ ${lines[1]} =~ ${HEADER_PATTERN} ]]
 
-  output_stdout=$(2>/dev/null "${TOOL_COMMAND_LINE[@]}" --certbot-dir "${CERTBOT_CONFIG_DIR}")
+  output_stdout=$("${TOOL_COMMAND_LINE[@]}" 2>/dev/null --certbot-dir "${CERTBOT_CONFIG_DIR}")
   [[ -z ${output_stdout} ]]
 }
