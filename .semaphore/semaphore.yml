@@ -26,6 +26,7 @@ blocks:
           commands:
             # Install linters
             - "sudo snap install shellcheck shfmt"
+            - 'export PATH="/snap/bin:${PATH}"'
 
             # Install Certbot
             - "sudo snap install --classic certbot"
@@ -39,6 +40,12 @@ blocks:
 
             # Lint code, check formatting and run tests
             - "checkout --use-cache"
+            - >
+              ln
+              --relative
+              --symbolic
+              "${PWD}/.config/shellcheckrc"
+              ~/.shellcheckrc
             - "./hooks.bash"
 
             - >
