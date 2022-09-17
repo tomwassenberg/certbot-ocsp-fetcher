@@ -18,5 +18,4 @@ shopt -s inherit_errexit
 shfmt -d -s .
 
 [[ -v CI ]] && PREFIX=(sudo -E)
-# shellcheck disable=2154
-${PREFIX[*]:-} bats --pretty --jobs 8 ./tests
+"${PREFIX[@]:-env}" bats --pretty --jobs 8 ./tests
