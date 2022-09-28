@@ -362,7 +362,7 @@ run_standalone() {
 
   # Check specific lineage if passed on CLI,
   # or otherwise all lineages in Certbot's dir
-  if [[ -v CERT_LINEAGES[@] ]]; then
+  if [[ -n ${!CERT_LINEAGES[*]} ]]; then
     for lineage_name in "${!CERT_LINEAGES[@]}"; do
       if [[ -r ${CERTBOT_DIR}/live/${lineage_name} ]]; then
         fetch_ocsp_response \
@@ -411,7 +411,7 @@ run_as_deploy_hook() {
       "when run as Certbot hook"
   fi
 
-  if [[ -v CERT_LINEAGES[@] ]]; then
+  if [[ -n ${!CERT_LINEAGES[*]} ]]; then
     # The certificate lineage is already inferred from the environment
     # variable that Certbot passes
     exit_with_error "-n/--cert-name cannot be passed when run as Certbot hook"
@@ -624,7 +624,7 @@ print_and_handle_result() {
     # Extract header to direct it to stderr
     printf '%s\n' "${output%%$'\n'*}" >&2
     # Remove header before printing everything else to stdout
-    [[ -v lineages_processed[@] ]] && printf '%b\n' "${output#*$'\n'}"
+    [[ -n ${!lineages_processed[*]} ]] && printf '%b\n' "${output#*$'\n'}"
 
     if [[ ${COLORED_STDERR:-} != false ]]; then
       printf %b "${RED}${column_error[*]-}${COLOR_DEFAULT}" >&2
