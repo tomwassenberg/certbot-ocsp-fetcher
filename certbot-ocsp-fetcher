@@ -32,10 +32,10 @@ exit_with_error() {
     local -r COLORED_ERROR_MSG=${RED}${error_prefix}${*}${COLOR_DEFAULT}
 
   # We will have closed file descriptor 2 unless verbosity was requested, so we
-  # will try to use FD4 (the FD that stderr was likely redirected to), and
-  # fallback to FD2 if FD4 wasn't opened yet.
-  if [[ -f /dev/fd/4 ]]; then
-    exec >&4
+  # will try to use FD5 (the FD that stderr was likely redirected to), and
+  # fallback to FD2 if FD5 wasn't opened yet.
+  if [[ -f /dev/fd/5 ]]; then
+    exec >&5
   else
     exec >&2
   fi
@@ -302,7 +302,7 @@ EOSTRING
 
   # First copy file descriptor 2 to a new FD, so stderr can still be used
   # (unconditionally) in the exit_with_error function.
-  exec 4>&2
+  exec 5>&2
   if ((VERBOSITY < 1)); then
     exec 2>/dev/null
   fi
