@@ -44,7 +44,7 @@ blocks:
               ln
               --relative
               --symbolic
-              "${PWD}/.config/shellcheckrc"
+              "${PWD}/shellcheckrc"
               ~/.shellcheckrc
             - "./hooks.bash"
 
