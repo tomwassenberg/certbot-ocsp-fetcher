@@ -101,6 +101,7 @@ fetch_sample_certs() {
         --logs-dir "${CERTBOT_LOGS_DIR}" \
         --work-dir "${CERTBOT_WORK_DIR}" \
         certonly \
+        --key-type ecdsa \
         --non-interactive \
         --staging \
         --manual \
