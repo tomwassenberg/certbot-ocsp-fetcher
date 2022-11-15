@@ -9,25 +9,25 @@ load _test_helper
   )
 
   if [[ ${CI:-} == true ]]; then
-    fetch_sample_certs "expired example"
+    fetch_sample_certs expired-example
 
     # Use `faketime` to trick the tool into thinking this is an expired
     # certificate, by setting the system time to 90 days in the future. In
     # other words: hack time.
-    # This does mean that we can't test that a _valid_ example is still fetched
+    # This does mean that we can't test that a valid example is still fetched
     # for successfully, because this affects all lineages in the run.
     run faketime "+90 days" "${tool_command_line[@]}"
 
     ((status != 0))
   else
-    fetch_sample_certs "expired example" "valid example"
+    fetch_sample_certs expired-example valid-example
 
     run "${tool_command_line[@]}"
 
     ((status != 0))
     [[ ${lines[3]} =~ ${SUCCESS_PATTERN} ]]
-    [[ -e "${OUTPUT_DIR}/valid example.der" ]]
+    [[ -e "${OUTPUT_DIR}/valid-example.der" ]]
   fi
-  [[ ${lines[2]} =~ ^"expired example"[[:blank:]]+"failed to update"[[:blank:]]+"leaf certificate expired"$ ]]
-  [[ ! -e "${OUTPUT_DIR}/expired example.der" ]]
+  [[ ${lines[2]} =~ ^expired-example[[:blank:]]+"failed to update"[[:blank:]]+"leaf certificate expired"$ ]]
+  [[ ! -e "${OUTPUT_DIR}/expired-example.der" ]]
 }

@@ -3,7 +3,7 @@
 load _test_helper
 
 @test "fetch OCSP responses for all certificate lineages" {
-  fetch_sample_certs --multiple "valid example"
+  fetch_sample_certs --multiple valid-example
 
   run "${TOOL_COMMAND_LINE[@]}" \
     --certbot-dir "${CERTBOT_CONFIG_DIR}"

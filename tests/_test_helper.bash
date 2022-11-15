@@ -10,17 +10,14 @@ IFS=$'\n'
 shopt -s inherit_errexit
 
 HEADER_PATTERN="^LINEAGE[[:blank:]]+RESULT[[:blank:]]+REASON$"
-SUCCESS_PATTERN="^valid example[[:blank:]]+updated[[:blank:]]*$"
+SUCCESS_PATTERN="^valid-example[[:blank:]]+updated[[:blank:]]*$"
 
 # Use folders with trailing newlines in them, to test that these are
 # handled properly as well. This employs a workaround, because trailing
 # newlines are always stripped in a command substitution.
 setup() {
-  CERTBOT_BASE_DIR=$(
-    mktemp --directory --suffix $'\n'
-    echo x
-  )
-  readonly CERTBOT_BASE_DIR=${CERTBOT_BASE_DIR%??}
+  CERTBOT_BASE_DIR=$(mktemp --directory)
+  readonly CERTBOT_BASE_DIR
 
   # Generate random DNS label, because Let's Encrypt merges certificate
   # orders that are created in parallel, if the included SANs are identical.
@@ -32,11 +29,8 @@ setup() {
   mkdir \
     "${CERTBOT_CONFIG_DIR}" "${CERTBOT_LOGS_DIR}" "${CERTBOT_WORK_DIR}"
 
-  OUTPUT_DIR=$(
-    mktemp --directory --suffix $'\n'
-    echo x
-  )
-  readonly OUTPUT_DIR=${OUTPUT_DIR%??}
+  OUTPUT_DIR=$(mktemp --directory)
+  readonly OUTPUT_DIR
 
   TOOL_COMMAND_LINE=(
     "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher"
@@ -60,7 +54,7 @@ fetch_sample_certs() {
 
   while ((${#} > 0)); do
     case ${1} in
-      "valid example")
+      valid-example)
         if [[ ${CI:-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
@@ -68,7 +62,7 @@ fetch_sample_certs() {
         fi
         shift
         ;;
-      "expired example")
+      expired-example)
         if [[ ${CI:-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
@@ -76,7 +70,7 @@ fetch_sample_certs() {
         fi
         shift
         ;;
-      "revoked example")
+      revoked-example)
         if [[ ${CI:-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
@@ -144,14 +138,14 @@ fetch_sample_certs() {
 
   if [[ ${multiple:-} == true ]]; then
     mv \
-      "${CERTBOT_CONFIG_DIR}/live/valid example/" \
-      "${CERTBOT_CONFIG_DIR}/live/valid example 1"
+      "${CERTBOT_CONFIG_DIR}/live/valid-example/" \
+      "${CERTBOT_CONFIG_DIR}/live/valid-example_1"
     cp -R \
-      "${CERTBOT_CONFIG_DIR}/live/valid example 1/" \
-      "${CERTBOT_CONFIG_DIR}/live/valid example 2"
+      "${CERTBOT_CONFIG_DIR}/live/valid-example_1/" \
+      "${CERTBOT_CONFIG_DIR}/live/valid-example_2"
     cp -R \
-      "${CERTBOT_CONFIG_DIR}/live/valid example 1/" \
-      "${CERTBOT_CONFIG_DIR}/live/valid example 3"
+      "${CERTBOT_CONFIG_DIR}/live/valid-example_1/" \
+      "${CERTBOT_CONFIG_DIR}/live/valid-example_3"
   fi
 
   # To test for the bug that was fixed in 87fbdcc.
