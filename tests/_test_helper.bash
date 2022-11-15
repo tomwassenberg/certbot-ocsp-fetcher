@@ -153,5 +153,21 @@ fetch_sample_certs() {
 }
 
 teardown() {
+  # Revoke all certs that were issued for these tests and not revoked yet, so
+  # it's clear they were ephemeral and don't trigger notifications at their
+  # expiry.
+  if [[ ${CI:-} == true ]]; then
+    for lineage_path in \
+      "${CERTBOT_CONFIG_DIR}"/live/{expired,valid}-example{,_*}/; do
+      certbot \
+        --config-dir "${CERTBOT_CONFIG_DIR}" \
+        --logs-dir "${CERTBOT_LOGS_DIR}" \
+        --work-dir "${CERTBOT_WORK_DIR}" \
+        revoke \
+        --cert-path "${lineage_path}/cert.pem" \
+        --reason cessationofoperation
+    done
+  fi
+
   rm -fr -- "${CERTBOT_BASE_DIR}" "${OUTPUT_DIR}"
 }
