@@ -58,7 +58,7 @@ fetch_sample_certs() {
         if [[ ${CI:-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
-          lineages_host["${1}"]="mozilla-modern.badssl.com"
+          lineages_host["${1}"]="valid-isrgrootx2.letsencrypt.org"
         fi
         shift
         ;;
@@ -66,7 +66,7 @@ fetch_sample_certs() {
         if [[ ${CI:-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
-          lineages_host["${1}"]="expired.badssl.com"
+          lineages_host["${1}"]="expired-isrgrootx2.letsencrypt.org"
         fi
         shift
         ;;
@@ -74,7 +74,7 @@ fetch_sample_certs() {
         if [[ ${CI:-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
-          lineages_host["${1}"]="revoked.badssl.com"
+          lineages_host["${1}"]="revoked-isrgrootx2.letsencrypt.org"
         fi
         shift
         ;;
