@@ -135,7 +135,7 @@ tool:
   ## Distribution
 
 * Upstream: https://github.com/tomwassenberg/certbot-ocsp-fetcher
-* Arch Linux: https://aur.archlinux.org/packages/certbot-dns-gandi-git/
+* Arch Linux: https://aur.archlinux.org/packages/certbot-ocsp-fetcher-git
 * Debian: we require a packager
 * Ubuntu: we require a packager
 
