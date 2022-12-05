@@ -131,7 +131,7 @@ tool:
 - `-w, --no-reload-webserver`\
   Do not reload `nginx`. When not specified and the tool created or updated at
   least one OCSP staple file, the tool will attempt to reload `nginx`.
-  
+
 ## Distribution
 
 * Upstream: https://github.com/tomwassenberg/certbot-ocsp-fetcher
