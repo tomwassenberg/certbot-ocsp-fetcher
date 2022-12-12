@@ -16,7 +16,7 @@ determine_colored_output() {
   readonly RED='\033[0;31m'
   readonly COLOR_DEFAULT='\033[0m'
 
-  if [[ -v NO_COLOR || ${TERM:-} == dumb ]]; then
+  if [[ -v NO_COLOR || ${TERM-} == dumb ]]; then
     COLORED_STDOUT=false COLORED_STDERR=false
   else
     [[ -t 1 ]] || COLORED_STDOUT=false
@@ -28,7 +28,7 @@ determine_colored_output() {
 exit_with_error() {
   local error_prefix=error:$'\t\t'
 
-  [[ ${COLORED_STDERR:-} != false ]] &&
+  [[ ${COLORED_STDERR-} != false ]] &&
     local -r COLORED_ERROR_MSG=${RED}${error_prefix}${*}${COLOR_DEFAULT}
 
   # We will have closed file descriptor 2 unless verbosity was requested, so we
@@ -114,7 +114,7 @@ Usage: ${0##*/} [-c/--certbot-dir DIRECTORY] [-f/--force-update] \\
         if [[ ${parameter} =~ --certbot-dir=(.+) ]]; then
           CERTBOT_DIR=${BASH_REMATCH[1]}
         else
-          if [[ -n ${2:-} ]]; then
+          if [[ -n ${2-} ]]; then
             CERTBOT_DIR=${2}
             shift
           else
@@ -184,7 +184,7 @@ EOSTRING
           local cert_lineages_value=${BASH_REMATCH[1]}
           shift
         else
-          if [[ -n ${2:-} ]]; then
+          if [[ -n ${2-} ]]; then
             local cert_lineages_value=${2}
             shift 2
           else
@@ -198,9 +198,9 @@ EOSTRING
         declare -Ag CERT_LINEAGES
         # Check if a hardcoded OCSP responder was specified for this set of
         # lineages.
-        case ${1:-} in
+        case ${1-} in
           -u | --ocsp-responder)
-            if [[ -n ${2:-} ]]; then
+            if [[ -n ${2-} ]]; then
               for lineage_name in ${cert_lineages_value}; do
                 CERT_LINEAGES["${lineage_name}"]=${2}
               done
@@ -236,7 +236,7 @@ EOSTRING
         if [[ ${parameter} =~ --output-dir=(.+) ]]; then
           OUTPUT_DIR=${BASH_REMATCH[1]}
         else
-          if [[ -n ${2:-} ]]; then
+          if [[ -n ${2-} ]]; then
             OUTPUT_DIR=${2}
             shift
           else
@@ -447,7 +447,7 @@ check_for_existing_ocsp_staple_file() {
       local -r next_update=${BASH_REMATCH[1]}
     fi
   done
-  [[ -n ${this_update:-} && -n ${next_update:-} ]] || return 1
+  [[ -n ${this_update-} && -n ${next_update-} ]] || return 1
 
   # Only continue fetching OCSP response if existing response expires within
   # half of its lifetime.
@@ -494,7 +494,7 @@ fetch_ocsp_response() {
       # `set -o errexit` is not respected here, but in case of failure we still
       # err on the safe side by renewing the OCSP staple file.
       # shellcheck disable=2310
-      if [[ ${FORCE_UPDATE:-} != true ]] &&
+      if [[ ${FORCE_UPDATE-} != true ]] &&
         check_for_existing_ocsp_staple_file; then
         lineages_processed["${lineage_name}"]="not updated"$'\t'"valid staple file on disk"
         return
@@ -581,7 +581,7 @@ print_and_handle_result() {
   local lineages_processed_marked_up
   for lineage_name in "${!lineages_processed[@]}"; do
     lineages_processed_marked_up+=$'\n'"${lineage_name}"$'\t'
-    if [[ ${COLORED_STDOUT:-} != false ]]; then
+    if [[ ${COLORED_STDOUT-} != false ]]; then
       if [[ ${lineages_processed["${lineage_name}"]} =~ ^updated ]]; then
         lineages_processed_marked_up+=${GREEN}
       elif [[ ${lineages_processed["${lineage_name}"]} =~ ^"failed to update" ]]; then
@@ -593,14 +593,14 @@ print_and_handle_result() {
     fi
   done
   unset lineage_name
-  lineages_processed_marked_up=$(sort <<<"${lineages_processed_marked_up:-}")
+  lineages_processed_marked_up=$(sort <<<"${lineages_processed_marked_up-}")
   readonly lineages_processed_marked_up
 
-  if [[ ${RELOAD_WEBSERVER:-} != false ]]; then
+  if [[ ${RELOAD_WEBSERVER-} != false ]]; then
     reload_webserver
   fi
 
-  local output=${header}${lineages_processed_marked_up:-}${nginx_status-}
+  local output=${header}${lineages_processed_marked_up-}${nginx_status-}
 
   if ((VERBOSITY >= 1)); then
     local output_table
@@ -626,14 +626,14 @@ print_and_handle_result() {
     # Remove header before printing everything else to stdout
     [[ -n ${!lineages_processed[*]} ]] && printf '%b\n' "${output#*$'\n'}"
 
-    if [[ ${COLORED_STDERR:-} != false ]]; then
+    if [[ ${COLORED_STDERR-} != false ]]; then
       printf %b "${RED}${column_error[*]-}${COLOR_DEFAULT}" >&2
     else
       printf %b "${column_error[*]-}" >&2
     fi
   fi
 
-  [[ ${ERROR_ENCOUNTERED:-} != true ]]
+  [[ ${ERROR_ENCOUNTERED-} != true ]]
 }
 
 reload_webserver() {
@@ -641,16 +641,16 @@ reload_webserver() {
     if [[ ${lineages_processed["${lineage_name}"]} == updated ]]; then
       local nginx_status
       if nginx -s reload >&3 2>&1; then
-        [[ ${COLORED_STDERR:-} != false ]] && nginx_status=${GREEN}
+        [[ ${COLORED_STDERR-} != false ]] && nginx_status=${GREEN}
         # The last line includes a leading space, to workaround the lack of the
         # `-n` flag in later versions of `column`.
         nginx_status+=$'\n\n \t'"nginx reloaded"
       else
         ERROR_ENCOUNTERED=true
-        [[ ${COLORED_STDERR:-} != false ]] && nginx_status=${RED}
+        [[ ${COLORED_STDERR-} != false ]] && nginx_status=${RED}
         nginx_status=$'\n\n \t'"nginx not reloaded"$'\t'"unable to reload nginx service, try manually"
       fi
-      [[ ${COLORED_STDERR:-} != false ]] &&
+      [[ ${COLORED_STDERR-} != false ]] &&
         readonly nginx_status+=${COLOR_DEFAULT}
       break
     fi

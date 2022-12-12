@@ -5,7 +5,7 @@ load _test_helper
 @test "fail when fetching OCSP response for revoked certificate" {
   fetch_sample_certs revoked-example valid-example
 
-  if [[ ${CI:-} == true ]]; then
+  if [[ ${CI-} == true ]]; then
     certbot \
       --config-dir "${CERTBOT_CONFIG_DIR}" \
       --logs-dir "${CERTBOT_LOGS_DIR}" \

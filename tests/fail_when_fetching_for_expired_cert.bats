@@ -8,7 +8,7 @@ load _test_helper
     --certbot-dir "${CERTBOT_CONFIG_DIR}"
   )
 
-  if [[ ${CI:-} == true ]]; then
+  if [[ ${CI-} == true ]]; then
     fetch_sample_certs expired-example
 
     # Use `faketime` to trick the tool into thinking this is an expired

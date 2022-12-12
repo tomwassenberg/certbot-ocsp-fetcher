@@ -37,7 +37,7 @@ setup() {
     --output-dir "${OUTPUT_DIR}"
   )
 
-  if [[ ${CI:-} == true ]]; then
+  if [[ ${CI-} == true ]]; then
     ln --symbolic "${CERTBOT_ACCOUNTS_DIR:?}/" "${CERTBOT_CONFIG_DIR}"
 
     readonly TOOL_COMMAND_LINE
@@ -55,7 +55,7 @@ fetch_sample_certs() {
   while ((${#} > 0)); do
     case ${1} in
       valid-example)
-        if [[ ${CI:-} == true ]]; then
+        if [[ ${CI-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1}"]="valid-isrgrootx2.letsencrypt.org"
@@ -63,7 +63,7 @@ fetch_sample_certs() {
         shift
         ;;
       expired-example)
-        if [[ ${CI:-} == true ]]; then
+        if [[ ${CI-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1}"]="expired-isrgrootx2.letsencrypt.org"
@@ -71,7 +71,7 @@ fetch_sample_certs() {
         shift
         ;;
       revoked-example)
-        if [[ ${CI:-} == true ]]; then
+        if [[ ${CI-} == true ]]; then
           lineages_host["${1}"]="${UNIQUE_TEST_PREFIX}.${CERT_DOMAIN_FOR_CI:?}"
         else
           lineages_host["${1}"]="revoked-isrgrootx2.letsencrypt.org"
@@ -89,7 +89,7 @@ fetch_sample_certs() {
   done
 
   for lineage_name in "${!lineages_host[@]}"; do
-    if [[ ${CI:-} == true ]]; then
+    if [[ ${CI-} == true ]]; then
       certbot \
         --config-dir "${CERTBOT_CONFIG_DIR}" \
         --logs-dir "${CERTBOT_LOGS_DIR}" \
@@ -136,7 +136,7 @@ fetch_sample_certs() {
     fi
   done
 
-  if [[ ${multiple:-} == true ]]; then
+  if [[ ${multiple-} == true ]]; then
     mv \
       "${CERTBOT_CONFIG_DIR}/live/valid-example/" \
       "${CERTBOT_CONFIG_DIR}/live/valid-example_1"
@@ -156,7 +156,7 @@ teardown() {
   # Revoke all certs that were issued for these tests and not revoked yet, so
   # it's clear they were ephemeral and don't trigger notifications at their
   # expiry.
-  if [[ ${CI:-} == true ]]; then
+  if [[ ${CI-} == true ]]; then
     for lineage_path in \
       "${CERTBOT_CONFIG_DIR}"/live/{expired,valid}-example{,_*}/; do
       certbot \

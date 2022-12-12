@@ -5,7 +5,7 @@ load _test_helper
 @test "fetch OCSP responses from supplied OCSP responder" {
   fetch_sample_certs --multiple valid-example
 
-  if [[ ${CI:-} == true ]]; then
+  if [[ ${CI-} == true ]]; then
     local ocsp_responder=http://stg-e1.o.lencr.org
   else
     local ocsp_responder=http://e1.o.lencr.org
