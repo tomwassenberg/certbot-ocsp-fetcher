@@ -61,7 +61,7 @@ check_for_dependencies() {
 
 parse_cli_options() {
   local -r cli_options="
-Usage: ${0##*/} [-c/--certbot-dir DIRECTORY] [-f/--force-update] \\
+Usage: ${0} [-c/--certbot-dir DIRECTORY] [-f/--force-update] \\
   [-h/--help] [-l/--no-color] [-n/--cert-name NAME[,NAME...] \\
   [-u/--ocsp-responder URL]] [-o/--output-dir DIRECTORY] \\
   [-q/--quiet|-v/--verbose] [-w/--no-reload-webserver]
@@ -142,6 +142,9 @@ Usage: ${0##*/} [-c/--certbot-dir DIRECTORY] [-f/--force-update] \\
         {
           printf '%s\n' certbot-ocsp-fetcher
           printf '%s\n' "${cli_options}"
+          local absolute_tool_path
+          absolute_tool_path=$(realpath --no-symlinks -- "${0}")
+          readonly absolute_tool_path
           cat <<EOSTRING
 
 certbot-ocsp-fetcher helps you setup OCSP stapling in nginx. The tool primes
@@ -157,7 +160,7 @@ Example:
 them in the current working directory. This should usually be run on a
 schedule, e.g. as a cronjob or systemd timer.
 
-$ ${0##*/}
+$ ${0}
 
 2. Add the path(s) to the resulting OCSP response(s) as the value of the
 ssl_stapling_file directive in the corresponding vhosts in Nginx. Don't
@@ -166,7 +169,7 @@ forget to reload Nginx afterwards.
 3. Re-issue all certificates managed by Certbot, to add the OCSP Must-Staple
 flag to the certs and automatically run certbot-ocsp-fetcher during renewals:
 
-$ certbot renew --deploy-hook "${0##*/}" --force-renewal --must-staple
+$ certbot renew --deploy-hook ${absolute_tool_path} --force-renewal --must-staple
 
 ---
 
