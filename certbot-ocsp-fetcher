@@ -577,7 +577,7 @@ fetch_ocsp_response() {
 
   # Restore SELinux context on SELinux systems
   if [ -f /usr/sbin/restorecon ]; then
-    restorecon -R "${OUTPUT_DIR}/"
+    restorecon "${OUTPUT_DIR}/${lineage_name}.der"
   fi 
 
   lineages_processed["${lineage_name}"]=updated
