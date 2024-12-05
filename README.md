@@ -26,6 +26,10 @@ certificates. The tool can behave in two ways:
 The use of this tool makes sure OCSP stapling in nginx works reliably. As a
 consequence, this allows you to use [OCSP Must-Staple].
 
+**Do note that Let's Encrypt has [announced][LE-OCSP-deprecation] that it will
+stop supporting OCSP Must-Staple at 2025-05-07, and retire their OCSP responders
+_completely_ on 2025-08-06.**
+
 ## Dependencies
 - Bash 4.3+
 - Certbot 0.5.0+
@@ -146,6 +150,7 @@ The channels below are not maintained by me.
  [#812]: https://trac.nginx.org/nginx/ticket/812
  [Mozilla's SSL Configuration Generator]: https://mozilla.github.io/server-side-tls/ssl-config-generator/
  [OCSP Must-Staple]: https://scotthelme.co.uk/ocsp-must-staple/
+ [LE-OCSP-deprecation]: https://letsencrypt.org/2024/12/05/ending-ocsp/
  [Bats]: https://github.com/bats-core/bats-core
  [supplied systemd service]: systemd-units/certbot-ocsp-fetcher.service#11
  [`$NO_COLOR`]: https://no-color.org/
