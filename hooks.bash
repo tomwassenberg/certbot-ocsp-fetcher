@@ -15,7 +15,7 @@ shopt -s inherit_errexit
   shellcheck --exclude 2154 -- ./**/*.bats
 )
 
-shfmt -d -s .
+shfmt --diff --simplify --indent=2 --case-indent .
 
 [[ -v CI ]] && PREFIX=(sudo -E)
 "${PREFIX[@]:-env}" bats --pretty --jobs 8 ./tests
