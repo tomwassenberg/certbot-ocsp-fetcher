@@ -3,6 +3,7 @@
 load _test_helper
 
 @test "fail when fetching OCSP response for expired certificate" {
+  # shellcheck disable=2153
   local -ar tool_command_line=(
     "${TOOL_COMMAND_LINE[@]}"
     --certbot-dir "${CERTBOT_CONFIG_DIR}"

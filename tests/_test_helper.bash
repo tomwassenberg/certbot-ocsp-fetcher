@@ -32,6 +32,7 @@ setup() {
   OUTPUT_DIR=$(mktemp --directory)
   readonly OUTPUT_DIR
 
+  # shellcheck disable=2154
   TOOL_COMMAND_LINE=(
     "${BATS_TEST_DIRNAME}/../certbot-ocsp-fetcher"
     --output-dir "${OUTPUT_DIR}"
